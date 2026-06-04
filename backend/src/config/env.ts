@@ -25,4 +25,8 @@ export const env = {
     apiKey: required('GEMINI_API_KEY'),
     model: optional('GEMINI_MODEL', 'gemini-2.5-flash'),
   },
+  anthropic: {
+    // Anthropic requires max_tokens; the run's model supplies the API key, so no server key here.
+    maxTokens: Number(optional('ANTHROPIC_MAX_TOKENS', '8192')),
+  },
 } as const;

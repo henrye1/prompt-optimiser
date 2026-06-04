@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import pLimit from 'p-limit';
-import type { GeminiService } from '../gemini/gemini.service.js';
+import type { LlmService } from '../llm/llm.types.js';
+import { resolveLlmServiceForRun } from '../llm/llm.factory.js';
 import { convertToMarkdown } from '../../lib/markdown.js';
 import { getActiveFiles, downloadFile, cacheMarkdown } from './files.service.js';
 import { RUN_STATUS, SECTION_STATUS } from './runs.service.js';
@@ -63,14 +64,16 @@ interface SectionToRun {
 }
 
 /**
- * Executes a run: builds the system instruction and file context, then makes one
- * independent Gemini call per section (bounded concurrency), writing output,
- * status, and logs. Aggregates the run status at the end. Safe to re-run.
+ * Executes a run: resolves the run's selected model, builds the system
+ * instruction and file context, then makes one independent generation call per
+ * section (bounded concurrency), writing output, status, and logs. Aggregates
+ * the run status at the end. Safe to re-run. Pass `llm` to inject a fake in tests;
+ * otherwise the service is resolved from the run's model (Gemini/Anthropic).
  */
 export async function executeRun(
   db: SupabaseClient,
-  gemini: GeminiService,
   runId: number,
+  llm?: LlmService,
 ): Promise<void> {
   await db
     .from('run')
@@ -79,6 +82,13 @@ export async function executeRun(
   await log(db, runId, 'info', 'Run started');
 
   try {
+    let gemini = llm;
+    if (!gemini) {
+      const resolved = await resolveLlmServiceForRun(db, runId);
+      gemini = resolved.service;
+      await log(db, runId, 'info', `Model: ${resolved.label}`);
+    }
+
     const [systemInstruction, context] = await Promise.all([
       buildSystemInstruction(db, runId),
       buildFileContext(db, runId),

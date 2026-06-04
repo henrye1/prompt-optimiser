@@ -7,7 +7,6 @@ import { optionalBoolean, optionalInt, optionalString, parseId, requireInt, requ
 import * as runs from './runs.service.js';
 import * as files from './files.service.js';
 import { executeRun } from './runExecution.service.js';
-import { GoogleGeminiService } from '../gemini/gemini.service.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 
@@ -105,9 +104,9 @@ export function runsRouter(): Router {
       await runs.getRun(req.supabase!, runId);
 
       // Background client bound to the caller's token (outlives the request).
+      // The model/provider is resolved from the run inside executeRun.
       const bgDb = createUserClient(req.accessToken!);
-      const gemini = new GoogleGeminiService();
-      void executeRun(bgDb, gemini, runId).catch((e) => {
+      void executeRun(bgDb, runId).catch((e) => {
         // eslint-disable-next-line no-console
         console.error(`Run ${runId} execution crashed:`, e);
       });

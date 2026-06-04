@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import type { GeminiService } from '../gemini/gemini.service.js';
+import type { LlmService } from '../llm/llm.types.js';
 
 beforeAll(() => {
   process.env.SUPABASE_URL ??= 'http://127.0.0.1:54321';
@@ -70,10 +70,10 @@ function statusCounts(writes: { table: string; op: string; payload: unknown }[])
 describe('executeRun', () => {
   it('marks all sections and the run Complete when generation succeeds', async () => {
     const { executeRun } = await import('./runExecution.service.js');
-    const gemini: GeminiService = { generate: async () => ({ text: 'OUTPUT', inputTokens: 10, outputTokens: 5 }) };
+    const gemini: LlmService = { generate: async () => ({ text: 'OUTPUT', inputTokens: 10, outputTokens: 5 }) };
     const writes: { table: string; op: string; payload: unknown }[] = [];
 
-    await executeRun(makeDb(writes), gemini, 1);
+    await executeRun(makeDb(writes), 1, gemini);
 
     const { sectionStatuses, finalRunStatus } = statusCounts(writes);
     expect(sectionStatuses.filter((s) => s === 4)).toHaveLength(2); // 2 COMPLETE
@@ -83,7 +83,7 @@ describe('executeRun', () => {
 
   it('marks the failing section Failed and the run Failed', async () => {
     const { executeRun } = await import('./runExecution.service.js');
-    const gemini: GeminiService = {
+    const gemini: LlmService = {
       generate: async ({ prompt }) => {
         if (prompt === 'Q2') throw new Error('boom');
         return { text: 'OUTPUT', inputTokens: 10, outputTokens: 5 };
@@ -91,7 +91,7 @@ describe('executeRun', () => {
     };
     const writes: { table: string; op: string; payload: unknown }[] = [];
 
-    await executeRun(makeDb(writes), gemini, 1);
+    await executeRun(makeDb(writes), 1, gemini);
 
     const { sectionStatuses, finalRunStatus } = statusCounts(writes);
     expect(sectionStatuses.filter((s) => s === 4)).toHaveLength(1); // 1 COMPLETE

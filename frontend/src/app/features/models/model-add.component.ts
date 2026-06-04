@@ -60,6 +60,15 @@ export class ModelAddComponent {
     return '';
   }
 
+  /** Example exact model id for the selected provider — the name is used verbatim as the API model id. */
+  modelIdExample(): string {
+    const provider = this.providers().find((p) => p.id === this.providerId());
+    const key = this.providerKey(provider?.name);
+    if (key === 'google') return 'gemini-2.5-flash';
+    if (key === 'anthropic') return 'claude-opus-4-6';
+    return 'model-id';
+  }
+
   async save(): Promise<void> {
     const providerId = this.providerId();
     if (!this.canSave() || providerId === null) return;

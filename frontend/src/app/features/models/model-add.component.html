@@ -19,8 +19,12 @@
     <form (ngSubmit)="save()">
       <div class="model-form-body">
         <div class="form-field">
-          <label class="form-label">Model name <span class="req">*</span></label>
-          <input name="modelName" [(ngModel)]="name" placeholder="e.g. Gemini 2.0 Pro" autocomplete="off" autocapitalize="off" spellcheck="false" />
+          <label class="form-label">Model ID <span class="req">*</span></label>
+          <input name="modelName" [(ngModel)]="name" [placeholder]="'e.g. ' + modelIdExample()" autocomplete="off" autocapitalize="off" spellcheck="false" />
+          <div class="form-hint">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+            Use the provider's exact model id — it's sent as-is when running.
+          </div>
         </div>
 
         <div class="form-field">
