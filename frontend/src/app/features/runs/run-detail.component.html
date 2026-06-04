@@ -1,114 +1,239 @@
 @let r = run();
 
-<section class="page editor">
+<section class="page run-detail">
+  <a class="crumb" routerLink="/runs">← Runs</a>
+
   @if (r) {
-    <a class="crumb" routerLink="/runs">← Runs</a>
-    <div class="eyebrow">
-      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4l14 8-14 8V4z"/></svg>
-      RUN
-    </div>
-
-    <div class="set-header">
-      <h1 class="run-title">{{ r.name }} <span class="badge status-{{ r.run_status_id }}">{{ statusLabel[r.run_status_id] }}</span></h1>
-      <div class="set-header-actions">
-        @if (isOwner()) {
-          <label class="toggle">
-            <input type="checkbox" [ngModel]="r.is_published" (ngModelChange)="togglePublish($event)" />
-            <span class="track"></span>
-            <span class="toggle-label">{{ r.is_published ? 'Published' : 'Draft' }}</span>
-          </label>
-          <button class="danger" type="button" (click)="deleteRun()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6"/></svg>Delete</button>
+    <!-- Header card -->
+    <div class="run-head-card">
+      <span class="run-tile lg" [class.fail]="r.run_status_id === 3">
+        @if (r.run_status_id === 3) {
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
         } @else {
-          <span class="badge">read-only</span>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 15h9"/></svg>
         }
+      </span>
+      <div class="run-head-main">
+        <h1 class="run-title">{{ r.name }}</h1>
+        <div class="run-meta">
+          <span class="rm-set">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            {{ r.prompt_set?.name || '—' }}
+          </span>
+          @if (r.ai_model) {
+            <span class="model-badge">
+              <span class="mb-tile provider-{{ providerKey(r.ai_model.provider?.name) }}">{{ initial(r.ai_model.name) }}</span>
+              {{ r.ai_model.name }}
+            </span>
+          }
+          <span class="badge status-{{ r.run_status_id }}">{{ statusLabel[r.run_status_id] }}</span>
+          @if (r.is_published) {
+            <span class="rm-pub">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>
+              Published
+            </span>
+          }
+          <span class="rm-date">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+            {{ formatDateTime(r.created_at) }}
+          </span>
+        </div>
       </div>
-    </div>
 
-    <p class="muted run-metrics">
-      @if (r.ai_model) { {{ r.ai_model.name }}<span class="dot-sep">·</span> }
-      @if (r.run_status_id === 4) {
-        {{ duration() }}<span class="dot-sep">·</span>{{ formatTokens(totalTokens()) }} tokens
-        ({{ r.input_tokens }} in / {{ r.output_tokens }} out)
-      } @else {
-        {{ statusLabel[r.run_status_id] }}
+      @if (isOwner()) {
+        <div class="run-head-actions">
+          @switch (r.run_status_id) {
+            @case (1) {
+              <button class="btn-primary" type="button" (click)="execute()">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4l14 8-14 8V4z"/></svg>
+                Run now
+              </button>
+            }
+            @case (2) {
+              <button class="danger" type="button" (click)="cancel()">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="6" width="3.5" height="12" rx="1"/><rect x="13.5" y="6" width="3.5" height="12" rx="1"/></svg>
+                Cancel
+              </button>
+            }
+            @case (3) {
+              <button class="btn-primary" type="button" (click)="execute()">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-.5 4"/><path d="M20 4v6h-6"/></svg>
+                Retry run
+              </button>
+            }
+            @case (4) {
+              <button class="ghost" type="button" (click)="execute()">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-.5 4"/><path d="M20 4v6h-6"/></svg>
+                Re-run
+              </button>
+              <button class="ghost" type="button" (click)="togglePublish()">{{ r.is_published ? 'Unpublish' : 'Publish' }}</button>
+              <button class="ghost" type="button" (click)="exportRun()">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4M5 21h14"/></svg>
+                Export
+              </button>
+            }
+          }
+        </div>
       }
-    </p>
+    </div>
 
     @if (error()) {
       <p class="error">{{ error() }}</p>
     }
 
-    <div class="panel">
-      <div class="pane-title">Files</div>
-      <ul class="file-list">
-        @for (f of r.files; track f.id) {
-          <li class="file-row">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="file-ic"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
-            <span class="file-name">{{ f.file_name }}</span>
-            @if (isOwner()) {
-              <button class="icon-btn danger" type="button" title="Remove" (click)="removeFile(f.id)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6"/></svg></button>
-            }
-          </li>
-        } @empty {
-          <li class="muted">No files uploaded.</li>
+    <!-- Two columns -->
+    <div class="run-grid">
+      <div class="run-main">
+        <!-- State band -->
+        @switch (r.run_status_id) {
+          @case (4) {
+            <div class="metric-cards">
+              <div class="metric-card"><div class="mc-val">{{ duration() }}</div><div class="mc-lbl">Duration</div></div>
+              <div class="metric-card"><div class="mc-val">{{ formatTokens(totalTokens()) }}</div><div class="mc-lbl">Tokens</div></div>
+            </div>
+          }
+          @case (1) {
+            <div class="state-banner new">
+              <span class="sb-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              </span>
+              <div class="sb-text">
+                <strong>This run hasn’t been run yet.</strong>
+                <span class="muted">{{ r.sections.length }} prompt sections are saved and ready to generate against your source documents.</span>
+              </div>
+              @if (isOwner()) {
+                <button class="btn-primary" type="button" (click)="execute()">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4l14 8-14 8V4z"/></svg>
+                  Run now
+                </button>
+              }
+            </div>
+          }
+          @case (2) {
+            <div class="state-banner progress">
+              <div class="bar"><div class="bar-fill" [style.width.%]="pct()"></div></div>
+              <div class="prog-label">
+                {{ sectionsComplete() }}/{{ r.sections.length }} sections complete
+                @if (runningSection()) { · generating <strong>{{ runningSection() }}</strong> }
+              </div>
+            </div>
+          }
+          @case (3) {
+            <div class="state-banner failed">
+              <span class="sb-icon fail">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+              </span>
+              <div class="sb-text">
+                <strong>Run failed</strong>
+                <span class="muted">{{ lastError() }}</span>
+              </div>
+              @if (isOwner()) {
+                <button class="ghost" type="button" (click)="execute()">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-.5 4"/><path d="M20 4v6h-6"/></svg>
+                  Retry
+                </button>
+              }
+            </div>
+          }
         }
-      </ul>
-      @if (isOwner()) {
-        <div class="row file-upload">
-          <label class="dashed-btn compact">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4M5 19h14"/></svg>
-            {{ selectedFile ? selectedFile.name : 'Choose file' }}
-            <input type="file" (change)="onFileSelected($event)" />
-          </label>
-          <button class="btn-add" type="button" (click)="upload()" [disabled]="!selectedFile || busy()">Upload</button>
-        </div>
-      }
-    </div>
 
-    @if (isOwner()) {
-      <div class="run-actions">
-        <button class="btn-primary" type="button" (click)="execute()">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4l14 8-14 8V4z"/></svg>
-          Run with Gemini
-        </button>
-        @if (r.run_status_id === 2) {
-          <span class="muted">Running… (auto-refreshing)</span>
-        }
+        <div class="run-sections-head">
+          <h2>Generated sections <span class="count-pill">{{ r.sections.length }}</span></h2>
+          @if (r.run_status_id === 4) {
+            <button class="ghost sm" type="button" (click)="copyAll()">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              Copy all
+            </button>
+          }
+        </div>
+
+        <div class="section-cards">
+          @for (sec of r.sections; track sec.id; let i = $index) {
+            <div class="section-card">
+              <div class="section-card-head">
+                <span class="num">{{ i + 1 }}</span>
+                <strong class="result-title">{{ sec.title }}</strong>
+                @if (sectionType(sec); as t) {
+                  <span class="type-badge type-{{ typeKey(t) }}">{{ t }}</span>
+                }
+                @if (sec.content) {
+                  <button class="icon-btn copy" type="button" title="Copy" (click)="copy(sec.content)">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  </button>
+                }
+              </div>
+
+              @if (sec.content) {
+                <div class="sec-body">{{ sec.content }}</div>
+              } @else if (sec.run_section_status_id === 2) {
+                <p class="sec-status generating"><span class="spinner"></span> Generating…</p>
+              } @else if (sec.run_section_status_id === 3) {
+                <p class="sec-status err">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+                  {{ sec.error_message || 'Failed' }}
+                </p>
+              } @else if (r.run_status_id === 3) {
+                <p class="sec-status skip">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+                  Skipped — run failed before this section
+                </p>
+              } @else {
+                <p class="sec-status muted">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                  Not run yet
+                </p>
+              }
+            </div>
+          } @empty {
+            <p class="muted">This run has no sections.</p>
+          }
+        </div>
       </div>
-    }
 
-    <div class="pane-title section-label">Results</div>
-    <div class="section-cards">
-      @for (sec of r.sections; track sec.id; let i = $index) {
-        <div class="section-card">
-          <div class="section-card-head">
-            <span class="num">{{ i + 1 }}</span>
-            <strong class="result-title">{{ sec.title }}</strong>
-            <span class="badge status-{{ sec.run_section_status_id }}">{{ statusLabel[sec.run_section_status_id] }}</span>
-          </div>
-          @if (sec.error_message) {
-            <p class="error">{{ sec.error_message }}</p>
-          }
-          @if (sec.content) {
-            <pre class="output">{{ sec.content }}</pre>
-          } @else {
-            <p class="muted">No output yet.</p>
-          }
+      <aside class="run-side">
+        <div class="side-card">
+          <div class="side-title">Details</div>
+          <dl class="kv">
+            <dt>Model</dt>
+            <dd>
+              @if (r.ai_model) {
+                <span class="model-badge">
+                  <span class="mb-tile provider-{{ providerKey(r.ai_model.provider?.name) }}">{{ initial(r.ai_model.name) }}</span>
+                  {{ r.ai_model.name }}
+                </span>
+              } @else { — }
+            </dd>
+            <dt>Prompt set</dt>
+            <dd>{{ r.prompt_set?.name || '—' }}</dd>
+            <dt>Sections</dt>
+            <dd>{{ r.sections.length }}</dd>
+            <dt>Owner</dt>
+            <dd><span class="owner"><span class="owner-av">{{ ownerInitials() }}</span>{{ ownerName() }}</span></dd>
+            <dt>Created</dt>
+            <dd>{{ formatDateTime(r.created_at) }}</dd>
+            <dt>Visibility</dt>
+            <dd>{{ r.is_published ? 'Published' : 'Private' }}</dd>
+          </dl>
         </div>
-      } @empty {
-        <p class="muted">This run has no sections (the prompt set had no non-System sections).</p>
-      }
-    </div>
 
-    <div class="panel logs-panel">
-      <div class="pane-title">Logs</div>
-      <ul class="logs">
-        @for (l of r.logs; track l.id) {
-          <li class="log-{{ l.level }}">[{{ l.level }}] {{ l.message }}</li>
-        } @empty {
-          <li class="muted">No logs yet.</li>
+        @if (r.files.length) {
+          <div class="side-card">
+            <div class="side-title">Source documents</div>
+            <div class="doc-list">
+              @for (f of r.files; track f.id) {
+                <div class="doc-row">
+                  @if (f.run_file_type_id === 2) {
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="doc-ic rate"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M17 5h2.5a1.5 1.5 0 0 1 0 5H17M7 5H4.5a1.5 1.5 0 0 0 0 5H7"/></svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="doc-ic"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+                  }
+                  <span class="doc-name">{{ f.file_name }}</span>
+                </div>
+              }
+            </div>
+          </div>
         }
-      </ul>
+      </aside>
     </div>
   } @else if (error()) {
     <p class="error">{{ error() }}</p>

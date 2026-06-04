@@ -1,13 +1,12 @@
 import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RunsService } from './runs.service';
 import { AuthService } from '../../core/auth.service';
-import { RUN_STATUS, type RunDetail } from './run.models';
+import { RUN_STATUS, type RunDetail, type RunSection } from './run.models';
 
 @Component({
   selector: 'app-run-detail',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink],
   templateUrl: './run-detail.component.html',
 })
 export class RunDetailComponent implements OnDestroy {
@@ -17,26 +16,24 @@ export class RunDetailComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly id = Number(this.route.snapshot.paramMap.get('id'));
   private poll: ReturnType<typeof setInterval> | null = null;
+  private readonly dateFmt = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  private readonly timeFmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
 
   readonly run = signal<RunDetail | null>(null);
   readonly error = signal<string | null>(null);
-  readonly busy = signal(false);
   readonly statusLabel = RUN_STATUS;
   readonly isOwner = computed(() => this.run()?.created_by === this.auth.user()?.id);
-  selectedFile: File | null = null;
 
-  totalTokens(): number {
-    const r = this.run();
-    return r ? r.input_tokens + r.output_tokens : 0;
-  }
-  formatTokens(n: number): string {
-    return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
-  }
-  duration(): string {
-    const r = this.run();
-    if (!r?.started_at || !r?.completed_at) return '—';
-    const secs = Math.max(0, Math.round((new Date(r.completed_at).getTime() - new Date(r.started_at).getTime()) / 1000));
-    return secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}m ${secs % 60}s`;
+  readonly sectionsComplete = computed(
+    () => this.run()?.sections.filter((s) => s.run_section_status_id === 4).length ?? 0,
+  );
+  readonly runningSection = computed(
+    () => this.run()?.sections.find((s) => s.run_section_status_id === 2)?.title ?? null,
+  );
+
+  pct(): number {
+    const total = this.run()?.sections.length ?? 0;
+    return total ? Math.round((this.sectionsComplete() / total) * 100) : 0;
   }
 
   constructor() {
@@ -51,7 +48,6 @@ export class RunDetailComponent implements OnDestroy {
     try {
       const run = await this.api.get(this.id);
       this.run.set(run);
-      // Keep polling while the run is New or In-progress.
       if (run.run_status_id === 1 || run.run_status_id === 2) this.startPolling();
       else this.stopPolling();
     } catch {
@@ -63,41 +59,59 @@ export class RunDetailComponent implements OnDestroy {
     if (this.poll) return;
     this.poll = setInterval(() => void this.load(), 2000);
   }
-
   private stopPolling(): void {
     if (this.poll) clearInterval(this.poll);
     this.poll = null;
   }
 
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.selectedFile = input.files?.[0] ?? null;
+  // ---- display helpers ----
+  sectionType(sec: RunSection): string {
+    return sec.prompt_section?.prompt?.prompt_type?.description ?? '';
+  }
+  typeKey(desc: string): string {
+    return (desc || '').toLowerCase();
+  }
+  providerKey(name: string | undefined | null): string {
+    const n = (name ?? '').toLowerCase();
+    if (n.includes('google')) return 'google';
+    if (n.includes('anthropic')) return 'anthropic';
+    return 'other';
+  }
+  initial(name: string | undefined | null): string {
+    return (name ?? '').trim().charAt(0).toUpperCase() || '?';
+  }
+  totalTokens(): number {
+    const r = this.run();
+    return r ? r.input_tokens + r.output_tokens : 0;
+  }
+  formatTokens(n: number): string {
+    return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+  }
+  duration(): string {
+    const r = this.run();
+    if (!r?.started_at || !r?.completed_at) return '—';
+    const secs = Math.max(0, Math.round((new Date(r.completed_at).getTime() - new Date(r.started_at).getTime()) / 1000));
+    return secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}m ${secs % 60}s`;
+  }
+  formatDateTime(iso: string): string {
+    const d = new Date(iso);
+    return `${this.dateFmt.format(d)} · ${this.timeFmt.format(d)}`;
+  }
+  ownerName(): string {
+    return this.isOwner() ? this.auth.user()?.email ?? 'You' : 'Team member';
+  }
+  ownerInitials(): string {
+    return this.ownerName().trim().charAt(0).toUpperCase() || '?';
+  }
+  lastError(): string | null {
+    const r = this.run();
+    if (!r) return null;
+    const failed = r.sections.find((s) => s.run_section_status_id === 3 && s.error_message);
+    if (failed?.error_message) return failed.error_message;
+    return [...r.logs].reverse().find((l) => l.level === 'error')?.message ?? 'The run failed.';
   }
 
-  async upload(): Promise<void> {
-    if (!this.selectedFile) return;
-    this.busy.set(true);
-    this.error.set(null);
-    try {
-      await this.api.uploadFile(this.id, this.selectedFile);
-      this.selectedFile = null;
-      await this.load();
-    } catch {
-      this.error.set('Upload failed');
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  async removeFile(fileId: number): Promise<void> {
-    try {
-      await this.api.removeFile(fileId);
-      await this.load();
-    } catch {
-      this.error.set('Failed to remove file');
-    }
-  }
-
+  // ---- actions (owner only) ----
   async execute(): Promise<void> {
     this.error.set(null);
     try {
@@ -108,23 +122,39 @@ export class RunDetailComponent implements OnDestroy {
       this.error.set('Failed to start run');
     }
   }
-
-  async togglePublish(isPublished: boolean): Promise<void> {
+  async togglePublish(): Promise<void> {
+    const r = this.run();
+    if (!r) return;
     try {
-      await this.api.update(this.id, { is_published: isPublished });
+      await this.api.update(this.id, { is_published: !r.is_published });
       await this.load();
     } catch {
-      this.error.set('Failed to update');
+      this.error.set('Failed to update visibility');
     }
   }
-
-  async deleteRun(): Promise<void> {
-    if (!confirm('Delete this run?')) return;
-    try {
-      await this.api.remove(this.id);
-      await this.router.navigateByUrl('/runs');
-    } catch {
-      this.error.set('Failed to delete run');
-    }
+  cancel(): void {
+    this.error.set('Cancelling a running job isn’t supported yet.');
+  }
+  exportRun(): void {
+    const r = this.run();
+    if (!r) return;
+    const body = r.sections
+      .map((s) => `## ${s.title}\n\n${s.content || '(no output)'}`)
+      .join('\n\n');
+    const md = `# ${r.name}\n\n${body}\n`;
+    const url = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${r.name.replace(/[^\w.\-]+/g, '_')}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  copy(text: string): void {
+    void navigator.clipboard?.writeText(text);
+  }
+  copyAll(): void {
+    const r = this.run();
+    if (!r) return;
+    this.copy(r.sections.map((s) => `## ${s.title}\n\n${s.content}`).join('\n\n'));
   }
 }

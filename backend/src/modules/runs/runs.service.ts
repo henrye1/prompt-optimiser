@@ -33,9 +33,10 @@ export async function getRun(db: SupabaseClient, id: number) {
     .select(
       'id, name, description, prompt_set_id, run_status_id, is_published, created_by, created_at, updated_at, ' +
         'started_at, completed_at, input_tokens, output_tokens, ' +
+        'prompt_set:prompt_set(name), ' +
         'ai_model:ai_model(id, name, provider:ai_model_provider(name)), ' +
         'sections:run_section(id, title, content, run_section_status_id, sequence, error_message, ' +
-        'prompt_section:prompt_section(content)), ' +
+        'prompt_section:prompt_section(prompt:prompt(prompt_type:prompt_type(description)))), ' +
         'files:run_file(id, file_name, mime_type, run_file_type_id, is_example_file, created_at, deleted_at), ' +
         'logs:run_log(id, level, message, created_at)',
     )

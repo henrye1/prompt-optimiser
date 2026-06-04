@@ -34,7 +34,7 @@ export interface RunSection {
   run_section_status_id: number;
   sequence: number;
   error_message: string | null;
-  prompt_section: { content: string } | null;
+  prompt_section: { prompt: { prompt_type: { description: string } | null } | null } | null;
 }
 
 export interface RunFile {
@@ -67,6 +67,7 @@ export interface RunDetail {
   completed_at: string | null;
   input_tokens: number;
   output_tokens: number;
+  prompt_set: { name: string } | null;
   ai_model: { id: number; name: string; provider: { name: string } | null } | null;
   sections: RunSection[];
   files: RunFile[];
