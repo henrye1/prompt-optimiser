@@ -498,7 +498,30 @@ input[type='file'] { display: none; }
 .type-badge.type-assessment { background: #ccfbf1; color: var(--teal); }
 .type-badge.type-audit { background: #fdebc8; color: var(--amber); }
 .section-card .icon-btn.copy { margin-left: 0.1rem; }
-.sec-body { white-space: pre-wrap; word-break: break-word; font-size: 0.88rem; line-height: 1.6; color: var(--text); }
+.sec-body { font-size: 0.88rem; line-height: 1.6; color: var(--text); word-break: break-word; }
+/* Rendered markdown inside a section body */
+.sec-body.markdown > :first-child { margin-top: 0; }
+.sec-body.markdown > :last-child { margin-bottom: 0; }
+.sec-body.markdown p { margin: 0 0 0.7rem; }
+.sec-body.markdown h1, .sec-body.markdown h2, .sec-body.markdown h3,
+.sec-body.markdown h4, .sec-body.markdown h5, .sec-body.markdown h6 { font-weight: 700; line-height: 1.3; margin: 1.1rem 0 0.5rem; }
+.sec-body.markdown h1 { font-size: 1.15rem; }
+.sec-body.markdown h2 { font-size: 1.05rem; }
+.sec-body.markdown h3 { font-size: 0.96rem; }
+.sec-body.markdown h4, .sec-body.markdown h5, .sec-body.markdown h6 { font-size: 0.9rem; color: var(--muted); }
+.sec-body.markdown ul, .sec-body.markdown ol { margin: 0 0 0.7rem; padding-left: 1.4rem; }
+.sec-body.markdown li { margin: 0.2rem 0; }
+.sec-body.markdown li > ul, .sec-body.markdown li > ol { margin: 0.2rem 0; }
+.sec-body.markdown a { color: var(--violet); }
+.sec-body.markdown strong { font-weight: 700; }
+.sec-body.markdown code { font-family: ui-monospace, 'SF Mono', monospace; font-size: 0.82em; background: #f1f2f5; padding: 0.1rem 0.35rem; border-radius: 5px; }
+.sec-body.markdown pre { background: #f8f9fb; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 0.8rem 0.9rem; overflow-x: auto; margin: 0 0 0.7rem; }
+.sec-body.markdown pre code { background: none; padding: 0; font-size: 0.82rem; }
+.sec-body.markdown blockquote { margin: 0 0 0.7rem; padding: 0.1rem 0 0.1rem 0.85rem; border-left: 3px solid var(--violet-tint); color: var(--muted); }
+.sec-body.markdown hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+.sec-body.markdown table { border-collapse: collapse; width: 100%; margin: 0 0 0.7rem; font-size: 0.84rem; display: block; overflow-x: auto; }
+.sec-body.markdown th, .sec-body.markdown td { border: 1px solid var(--border); padding: 0.4rem 0.6rem; text-align: left; }
+.sec-body.markdown th { background: #f8f9fb; font-weight: 600; }
 .sec-status { display: flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; margin: 0; }
 .sec-status svg { flex: none; }
 .sec-status.muted { color: var(--faint); }

@@ -2,11 +2,12 @@ import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RunsService } from './runs.service';
 import { AuthService } from '../../core/auth.service';
+import { MarkdownPipe } from '../../shared/markdown.pipe';
 import { RUN_STATUS, type RunDetail, type RunSection } from './run.models';
 
 @Component({
   selector: 'app-run-detail',
-  imports: [RouterLink],
+  imports: [RouterLink, MarkdownPipe],
   templateUrl: './run-detail.component.html',
 })
 export class RunDetailComponent implements OnDestroy {

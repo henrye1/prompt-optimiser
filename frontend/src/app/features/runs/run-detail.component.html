@@ -164,7 +164,7 @@
               </div>
 
               @if (sec.content) {
-                <div class="sec-body">{{ sec.content }}</div>
+                <div class="sec-body markdown" [innerHTML]="sec.content | markdown"></div>
               } @else if (sec.run_section_status_id === 2) {
                 <p class="sec-status generating"><span class="spinner"></span> Generating…</p>
               } @else if (sec.run_section_status_id === 3) {
