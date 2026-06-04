@@ -1,0 +1,53 @@
+{
+  "name": "Credit Assessment (sample)",
+  "prompts": [
+    {
+      "name": "System role",
+      "type": "System",
+      "sections": [
+        {
+          "title": "Persona",
+          "content": "You are a meticulous credit analyst. Base every statement strictly on the provided financial data. If a figure is missing, say so explicitly rather than guessing."
+        },
+        {
+          "title": "Output style",
+          "content": "Respond in concise markdown. Lead with a one-line verdict, then 2-4 supporting bullet points."
+        }
+      ]
+    },
+    {
+      "name": "Liquidity",
+      "type": "Assessment",
+      "sections": [
+        {
+          "title": "Current ratio",
+          "content": "Calculate and interpret the current ratio (current assets / current liabilities). State whether short-term obligations are comfortably covered."
+        },
+        {
+          "title": "Operating cash flow",
+          "content": "Comment on operating cash flow relative to current liabilities. Flag any negative trend."
+        }
+      ]
+    },
+    {
+      "name": "Leverage",
+      "type": "Assessment",
+      "sections": [
+        {
+          "title": "Net debt",
+          "content": "Compute net debt (total debt minus cash) and the net-debt-to-equity ratio. Assess the overall debt position."
+        }
+      ]
+    },
+    {
+      "name": "Compliance audit",
+      "type": "Audit",
+      "sections": [
+        {
+          "title": "Disclosure completeness",
+          "content": "Check whether the statements disclose all of: revenue, net income, total assets, total liabilities, and cash. List anything missing."
+        }
+      ]
+    }
+  ]
+}

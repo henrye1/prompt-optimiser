@@ -1,0 +1,14 @@
+{
+  "name": "Profitability",
+  "type": "Assessment",
+  "sections": [
+    {
+      "title": "Gross margin",
+      "content": "Calculate gross margin (gross profit / revenue) and comment on whether it is healthy for the sector."
+    },
+    {
+      "title": "Net margin",
+      "content": "Calculate net margin (net income / revenue) and note any year-over-year change."
+    }
+  ]
+}

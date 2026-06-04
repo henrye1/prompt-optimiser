@@ -1,0 +1,106 @@
+@let r = run();
+
+<section class="page editor">
+  @if (r) {
+    <a class="crumb" routerLink="/runs">← Runs</a>
+    <div class="eyebrow">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4l14 8-14 8V4z"/></svg>
+      RUN
+    </div>
+
+    <div class="set-header">
+      <h1 class="run-title">{{ r.name }} <span class="badge status-{{ r.run_status_id }}">{{ statusLabel[r.run_status_id] }}</span></h1>
+      <div class="set-header-actions">
+        @if (isOwner()) {
+          <label class="toggle">
+            <input type="checkbox" [ngModel]="r.is_published" (ngModelChange)="togglePublish($event)" />
+            <span class="track"></span>
+            <span class="toggle-label">{{ r.is_published ? 'Published' : 'Draft' }}</span>
+          </label>
+          <button class="danger" type="button" (click)="deleteRun()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6"/></svg>Delete</button>
+        } @else {
+          <span class="badge">read-only</span>
+        }
+      </div>
+    </div>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <div class="panel">
+      <div class="pane-title">Files</div>
+      <ul class="file-list">
+        @for (f of r.files; track f.id) {
+          <li class="file-row">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="file-ic"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+            <span class="file-name">{{ f.file_name }}</span>
+            @if (isOwner()) {
+              <button class="icon-btn danger" type="button" title="Remove" (click)="removeFile(f.id)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6"/></svg></button>
+            }
+          </li>
+        } @empty {
+          <li class="muted">No files uploaded.</li>
+        }
+      </ul>
+      @if (isOwner()) {
+        <div class="row file-upload">
+          <label class="dashed-btn compact">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4M5 19h14"/></svg>
+            {{ selectedFile ? selectedFile.name : 'Choose file' }}
+            <input type="file" (change)="onFileSelected($event)" />
+          </label>
+          <button class="btn-add" type="button" (click)="upload()" [disabled]="!selectedFile || busy()">Upload</button>
+        </div>
+      }
+    </div>
+
+    @if (isOwner()) {
+      <div class="run-actions">
+        <button class="btn-primary" type="button" (click)="execute()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4l14 8-14 8V4z"/></svg>
+          Run with Gemini
+        </button>
+        @if (r.run_status_id === 2) {
+          <span class="muted">Running… (auto-refreshing)</span>
+        }
+      </div>
+    }
+
+    <div class="pane-title section-label">Results</div>
+    <div class="section-cards">
+      @for (sec of r.sections; track sec.id; let i = $index) {
+        <div class="section-card">
+          <div class="section-card-head">
+            <span class="num">{{ i + 1 }}</span>
+            <strong class="result-title">{{ sec.title }}</strong>
+            <span class="badge status-{{ sec.run_section_status_id }}">{{ statusLabel[sec.run_section_status_id] }}</span>
+          </div>
+          @if (sec.error_message) {
+            <p class="error">{{ sec.error_message }}</p>
+          }
+          @if (sec.content) {
+            <pre class="output">{{ sec.content }}</pre>
+          } @else {
+            <p class="muted">No output yet.</p>
+          }
+        </div>
+      } @empty {
+        <p class="muted">This run has no sections (the prompt set had no non-System sections).</p>
+      }
+    </div>
+
+    <div class="panel logs-panel">
+      <div class="pane-title">Logs</div>
+      <ul class="logs">
+        @for (l of r.logs; track l.id) {
+          <li class="log-{{ l.level }}">[{{ l.level }}] {{ l.message }}</li>
+        } @empty {
+          <li class="muted">No logs yet.</li>
+        }
+      </ul>
+    </div>
+  } @else if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+</section>

@@ -1,0 +1,40 @@
+@if (isAuthenticated()) {
+  <header class="app-bar">
+    <a class="brand" routerLink="/">
+      <span class="logo-tile">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="#34d399">
+          <path d="M12 2c.4 3.6 1.8 5 5.4 5.4-3.6.4-5 1.8-5.4 5.4-.4-3.6-1.8-5-5.4-5.4 3.6-.4 5-1.8 5.4-5.4z" transform="translate(0 4.6)" />
+          <path d="M12 2c.4 3.6 1.8 5 5.4 5.4-3.6.4-5 1.8-5.4 5.4-.4-3.6-1.8-5-5.4-5.4 3.6-.4 5-1.8 5.4-5.4z" />
+        </svg>
+      </span>
+      <span class="wordmark">Prompt<span class="accent">Comparer</span></span>
+    </a>
+
+    <nav>
+      <a routerLink="/prompt-sets" routerLinkActive="active">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
+        </svg>
+        Prompt Sets
+      </a>
+      <a routerLink="/runs" routerLinkActive="active">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+          <path d="M6 4l14 8-14 8V4z" />
+        </svg>
+        Runs
+      </a>
+    </nav>
+
+    <span class="spacer"></span>
+
+    <span class="avatar" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff">
+        <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 4-6 8-6s8 2 8 6z" />
+      </svg>
+    </span>
+    <button class="ghost" type="button" (click)="signOut()">Sign out</button>
+  </header>
+}
+
+<router-outlet></router-outlet>

@@ -1,0 +1,22 @@
+<section class="page">
+  <h1>Welcome back</h1>
+  <p class="muted">
+    Signed in as <strong>{{ email }}</strong>
+    @if (backendOk()) {
+      · <span class="badge status-4">API connected</span>
+    } @else {
+      · <span class="badge status-3">API unreachable</span>
+    }
+  </p>
+
+  <div class="home-tiles">
+    <a class="home-tile" routerLink="/prompt-sets">
+      <h2>Prompt Sets</h2>
+      <p class="muted">Author reusable prompts and sections.</p>
+    </a>
+    <a class="home-tile" routerLink="/runs">
+      <h2>Runs</h2>
+      <p class="muted">Run a prompt set against Gemini with file context.</p>
+    </a>
+  </div>
+</section>

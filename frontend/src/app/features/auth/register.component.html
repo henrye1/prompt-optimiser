@@ -1,0 +1,25 @@
+<section class="auth">
+  <h1>Create account</h1>
+  <form (ngSubmit)="submit()">
+    <label>
+      Email
+      <input type="email" name="email" [(ngModel)]="email" required autocomplete="email" />
+    </label>
+    <label>
+      Password
+      <input type="password" name="password" [(ngModel)]="password" required autocomplete="new-password" minlength="6" />
+    </label>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+    @if (info()) {
+      <p class="info">{{ info() }}</p>
+    }
+
+    <button type="submit" [disabled]="busy()">
+      {{ busy() ? 'Creating…' : 'Register' }}
+    </button>
+  </form>
+  <p>Already have an account? <a routerLink="/login">Sign in</a></p>
+</section>

@@ -1,0 +1,12 @@
+{
+  "sections": [
+    {
+      "title": "Interest coverage",
+      "content": "Compute interest coverage (EBIT / interest expense) and state whether interest payments are comfortably covered."
+    },
+    {
+      "title": "Debt maturity",
+      "content": "Summarize the debt maturity profile and flag any large near-term repayments."
+    }
+  ]
+}

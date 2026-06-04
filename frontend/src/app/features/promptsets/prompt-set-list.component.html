@@ -1,0 +1,97 @@
+<section class="page">
+  <header class="landing-head">
+    <div>
+      <h1>Prompt Sets</h1>
+      <p class="muted">Versioned, reusable prompt sets — author once, then run them as assessments across any model.</p>
+    </div>
+    <div class="landing-actions">
+      <label class="dashed-btn compact">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4M5 19h14"/></svg>
+        Import
+        <input type="file" accept="application/json,.json" (change)="importFromJson($event)" />
+      </label>
+      <button class="btn-primary" type="button" (click)="createNew()">+ New prompt set</button>
+    </div>
+  </header>
+
+  <div class="filter-bar">
+    <div class="seg">
+      <button type="button" class="seg-btn" [class.active]="status() === 'all'" (click)="status.set('all')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        All <span class="seg-count">{{ allCount() }}</span>
+      </button>
+      <button type="button" class="seg-btn" [class.active]="status() === 'published'" (click)="status.set('published')">
+        Published <span class="seg-count">{{ publishedCount() }}</span>
+      </button>
+      <button type="button" class="seg-btn" [class.active]="status() === 'drafts'" (click)="status.set('drafts')">
+        Drafts <span class="seg-count">{{ draftCount() }}</span>
+      </button>
+    </div>
+    <div class="search">
+      <span class="search-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span>
+      <input placeholder="Search prompt sets…" [ngModel]="search()" (ngModelChange)="search.set($event)" name="search" />
+    </div>
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (filtered().length > 0) {
+    <div class="pset-grid">
+      @for (s of filtered(); track s.id) {
+        <a class="pset-card" [routerLink]="['/prompt-sets', s.id]">
+          <div class="pset-head">
+            <span class="tile tile-system">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            </span>
+            <div class="pset-titles">
+              <div class="pset-name">{{ s.name }}</div>
+              <div class="pset-meta">You · v{{ s.version }} · updated {{ formatDate(s.updated_at) }}</div>
+            </div>
+            @if (s.is_published) {
+              <span class="badge status-4">Published</span>
+            } @else {
+              <span class="badge badge-draft">Draft</span>
+            }
+          </div>
+
+          @if (s.description) {
+            <p class="pset-desc">{{ s.description }}</p>
+          } @else {
+            <p class="pset-desc muted">No description yet.</p>
+          }
+
+          <div class="pset-tags">
+            @if (s.system_count > 0) {
+              <span class="count-tag tag-system">{{ s.system_count }} System</span>
+            }
+            @if (s.assessment_count > 0) {
+              <span class="count-tag tag-assessment">{{ s.assessment_count }} Assessment</span>
+            }
+            @if (s.audit_count > 0) {
+              <span class="count-tag tag-audit">{{ s.audit_count }} Audit</span>
+            }
+          </div>
+
+          <div class="pset-foot">
+            <span class="foot-item">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+              {{ s.prompt_count }} prompts · {{ s.section_count }} sections
+            </span>
+            @if (s.run_count > 0) {
+              <span class="foot-item">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4l14 8-14 8V4z"/></svg>
+                {{ s.run_count }} runs
+              </span>
+            } @else {
+              <span class="foot-item muted">No runs yet</span>
+            }
+          </div>
+        </a>
+      }
+    </div>
+  } @else {
+    <p class="muted">No prompt sets match. Create one with “+ New prompt set”.</p>
+  }
+</section>
