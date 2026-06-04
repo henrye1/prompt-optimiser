@@ -1,9 +1,12 @@
-import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { marked } from 'marked';
 import { RunsService } from './runs.service';
 import { AuthService } from '../../core/auth.service';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
 import { RUN_STATUS, type RunDetail, type RunSection } from './run.models';
+
+export type ExportFormat = 'md' | 'pdf' | 'word';
 
 @Component({
   selector: 'app-run-detail',
@@ -22,6 +25,7 @@ export class RunDetailComponent implements OnDestroy {
 
   readonly run = signal<RunDetail | null>(null);
   readonly error = signal<string | null>(null);
+  readonly exportOpen = signal(false);
   readonly statusLabel = RUN_STATUS;
   readonly isOwner = computed(() => this.run()?.created_by === this.auth.user()?.id);
 
@@ -136,17 +140,88 @@ export class RunDetailComponent implements OnDestroy {
   cancel(): void {
     this.error.set('Cancelling a running job isn’t supported yet.');
   }
-  exportRun(): void {
+  @HostListener('document:click')
+  closeExportMenu(): void {
+    this.exportOpen.set(false);
+  }
+
+  exportAs(format: ExportFormat): void {
+    this.exportOpen.set(false);
+    if (format === 'md') this.exportMarkdown();
+    else if (format === 'pdf') this.exportPdf();
+    else this.exportWord();
+  }
+
+  private exportMarkdown(): void {
+    this.downloadBlob(new Blob([this.buildMarkdown()], { type: 'text/markdown' }), `${this.fileBase()}.md`);
+  }
+
+  private exportWord(): void {
+    // HTML-based .doc — opens in Word / Google Docs with formatting preserved.
+    const html =
+      `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">` +
+      this.documentBody();
+    this.downloadBlob(new Blob([html], { type: 'application/msword' }), `${this.fileBase()}.doc`);
+  }
+
+  private exportPdf(): void {
+    // Print-to-PDF: open the rendered run in a new window and trigger the print dialog.
+    const win = window.open('', '_blank');
+    if (!win) {
+      this.error.set('Pop-up blocked — allow pop-ups for this site to export PDF.');
+      return;
+    }
+    const script = `<script>window.onload=function(){setTimeout(function(){window.print();},150);};<\/script>`;
+    win.document.write(`<!doctype html><html>${this.documentBody(script)}</html>`);
+    win.document.close();
+    win.focus();
+  }
+
+  /** Shared <head>+<body> markup for the Word and PDF exports. */
+  private documentBody(extraHead = ''): string {
     const r = this.run();
-    if (!r) return;
-    const body = r.sections
-      .map((s) => `## ${s.title}\n\n${s.content || '(no output)'}`)
-      .join('\n\n');
-    const md = `# ${r.name}\n\n${body}\n`;
-    const url = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+    if (!r) return '';
+    const css =
+      "body{font-family:'Segoe UI',Arial,sans-serif;color:#0f172a;line-height:1.6;max-width:800px;margin:2rem auto;padding:0 1rem;}" +
+      'h1{font-size:1.7rem;}h2{font-size:1.25rem;margin-top:1.6rem;border-bottom:1px solid #e5e7eb;padding-bottom:.3rem;}h3{font-size:1.05rem;}' +
+      'table{border-collapse:collapse;width:100%;margin:.6rem 0;}th,td{border:1px solid #cbd5e1;padding:.4rem .6rem;text-align:left;}th{background:#f1f5f9;}' +
+      'code{background:#f1f5f9;padding:.1rem .3rem;border-radius:4px;font-family:Consolas,monospace;}' +
+      'pre{background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;padding:.7rem;overflow:auto;}pre code{background:none;padding:0;}' +
+      'blockquote{border-left:3px solid #c7d2fe;margin:0 0 .7rem;padding:.2rem .9rem;color:#475569;}';
+    const sections = r.sections
+      .map((s) => {
+        const inner = s.content
+          ? (marked.parse(s.content, { async: false, gfm: true, breaks: true }) as string)
+          : '<p><em>(no output)</em></p>';
+        return `<section><h2>${this.esc(s.title)}</h2>${inner}</section>`;
+      })
+      .join('\n');
+    return (
+      `<head><meta charset="utf-8"><title>${this.esc(r.name)}</title><style>${css}</style>${extraHead}</head>` +
+      `<body><h1>${this.esc(r.name)}</h1>${sections}</body>`
+    );
+  }
+
+  private buildMarkdown(): string {
+    const r = this.run();
+    if (!r) return '';
+    const body = r.sections.map((s) => `## ${s.title}\n\n${s.content || '(no output)'}`).join('\n\n');
+    return `# ${r.name}\n\n${body}\n`;
+  }
+
+  private fileBase(): string {
+    return (this.run()?.name ?? 'run').replace(/[^\w.\-]+/g, '_');
+  }
+
+  private esc(s: string): string {
+    return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${r.name.replace(/[^\w.\-]+/g, '_')}.md`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }
