@@ -3,7 +3,7 @@ import multer from 'multer';
 import { requireAuth } from '../../middleware/auth.js';
 import { asyncHandler, HttpError } from '../../middleware/error.js';
 import { createUserClient } from '../../supabase/client.js';
-import { optionalBoolean, optionalString, parseId, requireInt, requireString } from '../../lib/validate.js';
+import { optionalBoolean, optionalInt, optionalString, parseId, requireInt, requireString } from '../../lib/validate.js';
 import * as runs from './runs.service.js';
 import * as files from './files.service.js';
 import { executeRun } from './runExecution.service.js';
@@ -30,6 +30,7 @@ export function runsRouter(): Router {
         name: requireString(req.body?.name, 'name'),
         description: optionalString(req.body?.description, 'description'),
         prompt_set_id: requireInt(req.body?.prompt_set_id, 'prompt_set_id'),
+        ai_model_id: optionalInt(req.body?.ai_model_id, 'ai_model_id'),
       };
       res.status(201).json(await runs.createRun(req.supabase!, input));
     }),

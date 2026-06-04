@@ -31,6 +31,12 @@ export const routes: Routes = [
       import('./features/runs/run-list.component').then((m) => m.RunListComponent),
   },
   {
+    path: 'runs/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/runs/run-new.component').then((m) => m.RunNewComponent),
+  },
+  {
     path: 'runs/:id',
     canActivate: [authGuard],
     loadComponent: () =>

@@ -27,6 +27,7 @@ export async function getRun(db: SupabaseClient, id: number) {
     .from('run')
     .select(
       'id, name, description, prompt_set_id, run_status_id, is_published, created_by, created_at, updated_at, ' +
+        'ai_model:ai_model(id, name, provider:ai_model_provider(name)), ' +
         'sections:run_section(id, title, content, run_section_status_id, sequence, error_message, ' +
         'prompt_section:prompt_section(content)), ' +
         'files:run_file(id, file_name, mime_type, run_file_type_id, is_example_file, created_at, deleted_at), ' +
@@ -63,7 +64,7 @@ async function systemPromptTypeId(db: SupabaseClient): Promise<number | null> {
  */
 export async function createRun(
   db: SupabaseClient,
-  input: { name: string; description?: string; prompt_set_id: number },
+  input: { name: string; description?: string; prompt_set_id: number; ai_model_id?: number },
 ) {
   // Load the prompt set's structure (RLS guarantees visibility).
   const { data: setData, error: setErr } = await db
@@ -89,6 +90,7 @@ export async function createRun(
       name: input.name,
       description: input.description ?? '',
       prompt_set_id: input.prompt_set_id,
+      ai_model_id: input.ai_model_id ?? null,
       run_status_id: RUN_STATUS.NEW,
     })
     .select('id')

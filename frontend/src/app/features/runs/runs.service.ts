@@ -18,8 +18,14 @@ export class RunsService {
     return firstValueFrom(this.http.get<RunDetail>(`${this.base}/runs/${id}`));
   }
 
-  create(input: { name: string; description?: string; prompt_set_id: number }) {
+  create(input: { name: string; description?: string; prompt_set_id: number; ai_model_id?: number }) {
     return firstValueFrom(this.http.post<RunDetail>(`${this.base}/runs`, input));
+  }
+
+  fileTypes() {
+    return firstValueFrom(
+      this.http.get<{ id: number; description: string }[]>(`${this.base}/reference/run-file-types`),
+    );
   }
 
   update(id: number, patch: { name?: string; description?: string; is_published?: boolean }) {

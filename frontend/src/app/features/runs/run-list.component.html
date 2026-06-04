@@ -3,21 +3,11 @@
     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4l14 8-14 8V4z"/></svg>
     RUNS
   </div>
-  <div class="list-head"><h1>Runs</h1></div>
+  <div class="list-head">
+    <h1>Runs</h1>
+    <button class="btn-primary" type="button" routerLink="/runs/new">+ New run</button>
+  </div>
 
-  <form class="create-bar" (ngSubmit)="create()">
-    <input name="newName" [(ngModel)]="newName" placeholder="New run name" />
-    <select name="set" [ngModel]="selectedSetId()" (ngModelChange)="selectedSetId.set($event)">
-      @for (s of sets(); track s.id) {
-        <option [ngValue]="s.id">{{ s.name }}</option>
-      }
-    </select>
-    <button class="btn-add" type="submit" [disabled]="sets().length === 0">+ New run</button>
-  </form>
-
-  @if (sets().length === 0) {
-    <p class="muted">Create a prompt set first.</p>
-  }
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }

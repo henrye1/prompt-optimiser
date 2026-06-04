@@ -177,4 +177,4 @@ insert into public.run_section_status (description) values
   ('New'), ('In-progress'), ('Failed'), ('Complete');
 
 insert into public.run_file_type (description) values
-  ('Document'), ('Spreadsheet'), ('Example');
+  ('Financial Statement'), ('Rating Report'), ('Credit Paper Example');
