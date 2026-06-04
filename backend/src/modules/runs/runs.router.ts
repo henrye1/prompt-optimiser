@@ -19,7 +19,7 @@ export function runsRouter(): Router {
   router.get(
     '/runs',
     asyncHandler(async (req, res) => {
-      res.json(await runs.listRuns(req.supabase!, req.userId));
+      res.json(await runs.listRuns(req.supabase!));
     }),
   );
 

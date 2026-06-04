@@ -70,7 +70,7 @@ function statusCounts(writes: { table: string; op: string; payload: unknown }[])
 describe('executeRun', () => {
   it('marks all sections and the run Complete when generation succeeds', async () => {
     const { executeRun } = await import('./runExecution.service.js');
-    const gemini: GeminiService = { generate: async () => 'OUTPUT' };
+    const gemini: GeminiService = { generate: async () => ({ text: 'OUTPUT', inputTokens: 10, outputTokens: 5 }) };
     const writes: { table: string; op: string; payload: unknown }[] = [];
 
     await executeRun(makeDb(writes), gemini, 1);
@@ -86,7 +86,7 @@ describe('executeRun', () => {
     const gemini: GeminiService = {
       generate: async ({ prompt }) => {
         if (prompt === 'Q2') throw new Error('boom');
-        return 'OUTPUT';
+        return { text: 'OUTPUT', inputTokens: 10, outputTokens: 5 };
       },
     };
     const writes: { table: string; op: string; payload: unknown }[] = [];

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import type { RunDetail, RunFile, RunSummary } from './run.models';
+import type { RunCard, RunDetail, RunFile } from './run.models';
 
 /** Wraps the backend Runs API. */
 @Injectable({ providedIn: 'root' })
@@ -11,7 +11,7 @@ export class RunsService {
   private readonly base = `${environment.apiBaseUrl}/api`;
 
   list() {
-    return firstValueFrom(this.http.get<RunSummary[]>(`${this.base}/runs`));
+    return firstValueFrom(this.http.get<RunCard[]>(`${this.base}/runs`));
   }
 
   get(id: number) {
@@ -29,7 +29,7 @@ export class RunsService {
   }
 
   update(id: number, patch: { name?: string; description?: string; is_published?: boolean }) {
-    return firstValueFrom(this.http.patch<RunSummary>(`${this.base}/runs/${id}`, patch));
+    return firstValueFrom(this.http.patch<unknown>(`${this.base}/runs/${id}`, patch));
   }
 
   remove(id: number) {

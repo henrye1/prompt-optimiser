@@ -25,6 +25,20 @@ export class RunDetailComponent implements OnDestroy {
   readonly isOwner = computed(() => this.run()?.created_by === this.auth.user()?.id);
   selectedFile: File | null = null;
 
+  totalTokens(): number {
+    const r = this.run();
+    return r ? r.input_tokens + r.output_tokens : 0;
+  }
+  formatTokens(n: number): string {
+    return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+  }
+  duration(): string {
+    const r = this.run();
+    if (!r?.started_at || !r?.completed_at) return '—';
+    const secs = Math.max(0, Math.round((new Date(r.completed_at).getTime() - new Date(r.started_at).getTime()) / 1000));
+    return secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}m ${secs % 60}s`;
+  }
+
   constructor() {
     void this.load();
   }

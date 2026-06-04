@@ -24,6 +24,16 @@
       </div>
     </div>
 
+    <p class="muted run-metrics">
+      @if (r.ai_model) { {{ r.ai_model.name }}<span class="dot-sep">·</span> }
+      @if (r.run_status_id === 4) {
+        {{ duration() }}<span class="dot-sep">·</span>{{ formatTokens(totalTokens()) }} tokens
+        ({{ r.input_tokens }} in / {{ r.output_tokens }} out)
+      } @else {
+        {{ statusLabel[r.run_status_id] }}
+      }
+    </p>
+
     @if (error()) {
       <p class="error">{{ error() }}</p>
     }

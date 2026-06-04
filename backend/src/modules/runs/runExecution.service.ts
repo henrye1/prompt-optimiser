@@ -72,7 +72,10 @@ export async function executeRun(
   gemini: GeminiService,
   runId: number,
 ): Promise<void> {
-  await db.from('run').update({ run_status_id: RUN_STATUS.IN_PROGRESS }).eq('id', runId);
+  await db
+    .from('run')
+    .update({ run_status_id: RUN_STATUS.IN_PROGRESS, started_at: new Date().toISOString(), completed_at: null })
+    .eq('id', runId);
   await log(db, runId, 'info', 'Run started');
 
   try {
@@ -98,17 +101,17 @@ export async function executeRun(
             .eq('id', section.id);
           try {
             const prompt = section.prompt_section?.content ?? '';
-            const output = await gemini.generate({ systemInstruction, prompt, context });
+            const { text, inputTokens, outputTokens } = await gemini.generate({ systemInstruction, prompt, context });
             await db
               .from('run_section')
               .update({
-                content: output,
+                content: text,
                 run_section_status_id: SECTION_STATUS.COMPLETE,
                 error_message: null,
               })
               .eq('id', section.id);
             await log(db, runId, 'info', `Section ${section.sequence} complete`);
-            return true;
+            return { ok: true, inputTokens, outputTokens };
           } catch (e) {
             const message = e instanceof Error ? e.message : 'Generation failed';
             await db
@@ -116,19 +119,32 @@ export async function executeRun(
               .update({ run_section_status_id: SECTION_STATUS.FAILED, error_message: message })
               .eq('id', section.id);
             await log(db, runId, 'error', `Section ${section.sequence} failed: ${message}`);
-            return false;
+            return { ok: false, inputTokens: 0, outputTokens: 0 };
           }
         }),
       ),
     );
 
-    const anyFailed = results.includes(false);
+    const anyFailed = results.some((r) => !r.ok);
+    const inputTokens = results.reduce((n, r) => n + r.inputTokens, 0);
+    const outputTokens = results.reduce((n, r) => n + r.outputTokens, 0);
     const finalStatus = anyFailed ? RUN_STATUS.FAILED : RUN_STATUS.COMPLETE;
-    await db.from('run').update({ run_status_id: finalStatus }).eq('id', runId);
+    await db
+      .from('run')
+      .update({
+        run_status_id: finalStatus,
+        completed_at: new Date().toISOString(),
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+      })
+      .eq('id', runId);
     await log(db, runId, anyFailed ? 'error' : 'info', anyFailed ? 'Run finished with failures' : 'Run complete');
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Run failed';
-    await db.from('run').update({ run_status_id: RUN_STATUS.FAILED }).eq('id', runId);
+    await db
+      .from('run')
+      .update({ run_status_id: RUN_STATUS.FAILED, completed_at: new Date().toISOString() })
+      .eq('id', runId);
     await log(db, runId, 'error', `Run failed: ${message}`);
   }
 }

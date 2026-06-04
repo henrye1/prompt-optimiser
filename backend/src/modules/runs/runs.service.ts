@@ -10,13 +10,18 @@ import { throwOnError, requireFound } from '../../lib/supabaseError.js';
 export const RUN_STATUS = { NEW: 1, IN_PROGRESS: 2, FAILED: 3, COMPLETE: 4 } as const;
 export const SECTION_STATUS = { NEW: 1, IN_PROGRESS: 2, FAILED: 3, COMPLETE: 4 } as const;
 
-const RUN_SUMMARY_COLUMNS =
-  'id, name, description, prompt_set_id, run_status_id, is_published, created_at, updated_at';
+const RUN_CARD_COLUMNS =
+  'id, name, run_status_id, is_published, created_by, created_at, started_at, completed_at, ' +
+  'input_tokens, output_tokens, prompt_set_name, model_name, provider_name, ' +
+  'section_total, section_complete, running_section, last_error';
 
-export async function listRuns(db: SupabaseClient, ownerId?: string) {
-  let query = db.from('run').select(RUN_SUMMARY_COLUMNS).is('deleted_at', null);
-  if (ownerId) query = query.eq('created_by', ownerId);
-  const { data, error } = await query.order('updated_at', { ascending: false });
+/** Runs visible to the caller (own + published), enriched for the list (run_card view). */
+export async function listRuns(db: SupabaseClient) {
+  const { data, error } = await db
+    .from('run_card')
+    .select(RUN_CARD_COLUMNS)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
   throwOnError(error, 'List runs');
   return data ?? [];
 }
@@ -27,6 +32,7 @@ export async function getRun(db: SupabaseClient, id: number) {
     .from('run')
     .select(
       'id, name, description, prompt_set_id, run_status_id, is_published, created_by, created_at, updated_at, ' +
+        'started_at, completed_at, input_tokens, output_tokens, ' +
         'ai_model:ai_model(id, name, provider:ai_model_provider(name)), ' +
         'sections:run_section(id, title, content, run_section_status_id, sequence, error_message, ' +
         'prompt_section:prompt_section(content)), ' +

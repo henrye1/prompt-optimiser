@@ -10,9 +10,15 @@ export interface GenerateParams {
   context?: string;
 }
 
+export interface GenerateResult {
+  text: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
 /** Seam over Gemini text generation so the run executor can be tested with a fake. */
 export interface GeminiService {
-  generate(params: GenerateParams): Promise<string>;
+  generate(params: GenerateParams): Promise<GenerateResult>;
 }
 
 /** Real implementation backed by the @google/genai SDK. */
@@ -25,13 +31,18 @@ export class GoogleGeminiService implements GeminiService {
     this.model = model;
   }
 
-  async generate({ systemInstruction, prompt, context }: GenerateParams): Promise<string> {
+  async generate({ systemInstruction, prompt, context }: GenerateParams): Promise<GenerateResult> {
     const contents = context ? `${context}\n\n---\n\n${prompt}` : prompt;
     const response = await this.ai.models.generateContent({
       model: this.model,
       contents,
       ...(systemInstruction ? { config: { systemInstruction } } : {}),
     });
-    return response.text ?? '';
+    const usage = response.usageMetadata;
+    return {
+      text: response.text ?? '',
+      inputTokens: usage?.promptTokenCount ?? 0,
+      outputTokens: usage?.candidatesTokenCount ?? 0,
+    };
   }
 }

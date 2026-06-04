@@ -6,15 +6,25 @@ export const RUN_STATUS: Record<number, string> = {
 };
 export const SECTION_STATUS = RUN_STATUS;
 
-export interface RunSummary {
+/** Row from the run_card view (Runs list). */
+export interface RunCard {
   id: number;
   name: string;
-  description: string;
-  prompt_set_id: number;
   run_status_id: number;
   is_published: boolean;
+  created_by: string;
   created_at: string;
-  updated_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  input_tokens: number;
+  output_tokens: number;
+  prompt_set_name: string | null;
+  model_name: string | null;
+  provider_name: string | null;
+  section_total: number;
+  section_complete: number;
+  running_section: string | null;
+  last_error: string | null;
 }
 
 export interface RunSection {
@@ -43,8 +53,21 @@ export interface RunLog {
   created_at: string;
 }
 
-export interface RunDetail extends RunSummary {
+export interface RunDetail {
+  id: number;
+  name: string;
+  description: string;
+  prompt_set_id: number;
+  run_status_id: number;
+  is_published: boolean;
   created_by: string;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  input_tokens: number;
+  output_tokens: number;
+  ai_model: { id: number; name: string; provider: { name: string } | null } | null;
   sections: RunSection[];
   files: RunFile[];
   logs: RunLog[];
