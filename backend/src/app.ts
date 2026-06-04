@@ -7,6 +7,7 @@ import { referenceRouter } from './modules/reference/reference.router.js';
 import { promptSetsRouter } from './modules/promptsets/promptsets.router.js';
 import { runsRouter } from './modules/runs/runs.router.js';
 import { modelsRouter } from './modules/models/models.router.js';
+import { optimizerRouter } from './modules/optimizer/optimizer.router.js';
 
 /**
  * Builds the Express application. Feature routers are mounted here (promptsets,
@@ -33,6 +34,7 @@ export function createApp(): Express {
   app.use('/api', promptSetsRouter());
   app.use('/api', runsRouter());
   app.use('/api', modelsRouter());
+  app.use('/api', optimizerRouter());
 
   // Terminal error handler — must be registered last.
   app.use(errorHandler);

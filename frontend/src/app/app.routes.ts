@@ -43,6 +43,24 @@ export const routes: Routes = [
       import('./features/runs/run-detail.component').then((m) => m.RunDetailComponent),
   },
   {
+    path: 'optimizer',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/optimizer/optimizer-list.component').then((m) => m.OptimizerListComponent),
+  },
+  {
+    path: 'optimizer/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/optimizer/optimizer-new.component').then((m) => m.OptimizerNewComponent),
+  },
+  {
+    path: 'optimizer/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/optimizer/optimizer-session.component').then((m) => m.OptimizerSessionComponent),
+  },
+  {
     path: 'models',
     canActivate: [authGuard],
     loadComponent: () =>

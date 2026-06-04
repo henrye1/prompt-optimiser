@@ -1,0 +1,186 @@
+@let s = session();
+@let sec = selected();
+
+<section class="page opt-session">
+  <a class="crumb" routerLink="/optimizer">← Sessions</a>
+
+  @if (s) {
+    <!-- Header -->
+    <div class="opt-head">
+      <div class="opt-head-main">
+        <h1 class="run-title">{{ s.name }}</h1>
+        <div class="run-meta">
+          <span class="rm-set">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            {{ s.prompt_set?.name || '—' }}
+          </span>
+          @if (s.ai_model) {
+            <span class="model-badge">
+              <span class="mb-tile provider-{{ providerKey(s.ai_model.provider?.name) }}">{{ initial(s.ai_model.name) }}</span>
+              {{ s.ai_model.name }}
+            </span>
+          }
+          <span class="rm-date">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+            {{ financialCount() }} financials · {{ ratingCount() }} rating
+          </span>
+        </div>
+      </div>
+      @if (isOwner()) {
+        <button class="btn-add save-set" type="button" (click)="saveToSet()" [disabled]="saving()">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v5h7M8 21v-7h8v7"/></svg>
+          {{ saving() ? 'Saving…' : 'Save to prompt set' }}
+        </button>
+      }
+    </div>
+
+    @if (error()) { <p class="error">{{ error() }}</p> }
+    @if (info()) { <p class="info">{{ info() }}</p> }
+
+    <div class="opt-workspace">
+      <!-- Sidebar -->
+      <aside class="opt-nav">
+        @if (contextGroups().length) {
+          <div class="on-section">
+            <div class="on-label">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              Context
+            </div>
+            @for (g of contextGroups(); track g.promptName) {
+              <div class="on-group">
+                <div class="on-group-head"><span class="type-badge type-system">System</span> <strong>{{ g.promptName }}</strong></div>
+                @for (item of g.sections; track item.id) {
+                  <button type="button" class="on-row" [class.active]="selectedId() === item.id" (click)="select(item)">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+                    <span class="on-name">{{ item.title }}</span>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <div class="on-section">
+          <div class="on-label">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8l5 4-5 4z"/></svg>
+            Assessments
+          </div>
+          @for (g of assessmentGroups(); track g.promptName) {
+            <div class="on-group">
+              <div class="on-group-head"><span class="type-badge type-{{ typeKey(g.typeDesc) }}">{{ g.typeDesc }}</span> <strong>{{ g.promptName }}</strong></div>
+              @for (item of g.sections; track item.id) {
+                <button type="button" class="on-row" [class.active]="selectedId() === item.id" (click)="select(item)">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5l11 7-11 7V5z"/></svg>
+                  <span class="on-name">{{ item.title }}</span>
+                  @if (item.runs.length) { <span class="on-count">{{ item.runs.length }}</span> }
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <div class="opt-main">
+        @if (sec) {
+          <div class="opt-prompt-card">
+            <div class="opc-head">
+              <span class="type-badge type-{{ typeKey(sec.prompt_type?.description) }}">{{ sec.prompt_type?.description }}</span>
+              <strong class="opc-title">{{ sec.title }}</strong>
+              <span class="opc-parent">{{ sec.prompt_name }}</span>
+            </div>
+            <div class="opc-body">
+              <div class="form-label">Prompt</div>
+              <textarea class="code prompt-edit" rows="4" [ngModel]="draft()" (ngModelChange)="onDraftChange($event)" [disabled]="!isOwner()"></textarea>
+              <div class="opc-foot">
+                @if (isSystem(sec)) {
+                  <span class="muted opc-note">Used as context for every assessment — edits are saved to the session, not run on their own.</span>
+                } @else {
+                  <span class="opc-runs muted">
+                    Runs on
+                    @if (s.ai_model) {
+                      <span class="model-badge"><span class="mb-tile provider-{{ providerKey(s.ai_model.provider?.name) }}">{{ initial(s.ai_model.name) }}</span>{{ s.ai_model.name }}</span>
+                    } @else { the server default }
+                  </span>
+                  @if (isOwner()) {
+                    <button class="btn-primary" type="button" (click)="rerun()" [disabled]="busy()">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4l14 8-14 8V4z"/></svg>
+                      {{ busy() ? 'Running…' : 'Rerun analysis' }}
+                    </button>
+                  }
+                }
+              </div>
+            </div>
+          </div>
+
+          @if (sec.runs.length) {
+            @let latest = sec.runs[0];
+            <div class="opt-output-card">
+              <div class="ooc-head">
+                <span class="ooc-title">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+                  Output
+                </span>
+                <div class="ooc-chips">
+                  @if (latest.model_name) { <span class="chip"><span class="mb-tile sm provider-{{ providerKey(s.ai_model?.provider?.name) }}">{{ initial(latest.model_name) }}</span>{{ latest.model_name }}</span> }
+                  <span class="chip">{{ formatTokens(latest.input_tokens + latest.output_tokens) }} <span class="ch-lbl">tokens</span></span>
+                  <span class="chip">{{ latency(latest.latency_ms) }} <span class="ch-lbl">latency</span></span>
+                </div>
+              </div>
+              @if (latest.status === 'failed') {
+                <p class="error">{{ latest.error_message || 'Generation failed' }}</p>
+              } @else {
+                <div class="sec-body markdown" [innerHTML]="latest.output | markdown"></div>
+              }
+            </div>
+
+            <div class="opt-history-card">
+              <div class="ohc-head">
+                <span class="ohc-title">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                  Section history
+                </span>
+                <span class="muted ohc-count">{{ sec.runs.length }} runs</span>
+              </div>
+              @for (r of sec.runs; track r.id) {
+                <div class="hist-row">
+                  <span class="hist-ic">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+                  </span>
+                  <div class="hist-main">
+                    <div class="hist-top">
+                      <strong>{{ r.status === 'failed' ? 'Run failed' : 'Ran analysis' }}</strong>
+                      <span class="hist-date">{{ formatDateTime(r.created_at) }}</span>
+                    </div>
+                    <div class="hist-preview muted">{{ r.status === 'failed' ? (r.error_message || 'Generation failed') : r.output }}</div>
+                    <div class="hist-foot">
+                      <div class="hist-chips">
+                        @if (r.model_name) { <span class="chip sm">{{ r.model_name }}</span> }
+                        <span class="chip sm">{{ formatTokens(r.input_tokens + r.output_tokens) }} tok</span>
+                        <span class="chip sm">{{ latency(r.latency_ms) }}</span>
+                      </div>
+                      @if (isOwner() && !isSystem(sec)) {
+                        <button type="button" class="restore-btn" (click)="restore(r.prompt_content)">
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-.5 4"/><path d="M20 4v6h-6"/></svg>
+                          Restore this prompt
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else if (!isSystem(sec)) {
+            <div class="opt-empty">
+              <p class="muted">No runs yet. Edit the prompt above and click <strong>Rerun analysis</strong> to generate the first output.</p>
+            </div>
+          }
+        } @else {
+          <p class="muted">Select a section to start tuning.</p>
+        }
+      </div>
+    </div>
+  } @else if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+</section>

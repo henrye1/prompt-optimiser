@@ -1,0 +1,58 @@
+<section class="page">
+  <div class="list-head">
+    <div>
+      <h1>Optimizer</h1>
+      <p class="muted">Tune prompts against real documents — run a section, edit, and rerun to see the difference.</p>
+    </div>
+    <button class="btn-primary" type="button" routerLink="/optimizer/new">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      New session
+    </button>
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <div class="opt-grid">
+    @for (s of sessions(); track s.id) {
+      <a class="opt-card" [routerLink]="['/optimizer', s.id]">
+        <div class="opt-card-top">
+          <span class="opt-tile">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h7M15 18h5"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="13" cy="18" r="2"/></svg>
+          </span>
+          <div class="opt-card-head">
+            <div class="opt-name">{{ s.name }}</div>
+            <div class="run-meta">
+              <span class="rm-set">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                {{ s.prompt_set_name || '—' }}
+              </span>
+              @if (s.model_name) {
+                <span class="model-badge">
+                  <span class="mb-tile provider-{{ providerKey(s.provider_name) }}">{{ initial(s.model_name) }}</span>
+                  {{ s.model_name }}
+                </span>
+              }
+              @if (s.is_published) {
+                <span class="rm-pub">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>
+                  Published
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="opt-card-foot">
+          <span class="opt-files">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+            {{ s.financial_count }} financials · {{ s.rating_count }} rating
+          </span>
+          <span class="opt-runs">{{ s.run_count }} runs · {{ relTime(s.last_run_at) }}</span>
+        </div>
+      </a>
+    } @empty {
+      <p class="muted">No sessions yet. Start one with “New session”.</p>
+    }
+  </div>
+</section>

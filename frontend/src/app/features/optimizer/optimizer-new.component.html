@@ -1,0 +1,107 @@
+<section class="page">
+  <a class="crumb" routerLink="/optimizer">← Sessions</a>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <div class="model-form run-form">
+    <div class="model-form-head">
+      <span class="tile tile-system">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h7M15 18h5"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="13" cy="18" r="2"/></svg>
+      </span>
+      <div>
+        <div class="mf-title">New optimization session</div>
+        <div class="muted mf-sub">Pick the prompt set to tune and a model, point it at the source documents, then start tuning.</div>
+      </div>
+    </div>
+
+    <div class="model-form-body">
+      <div class="form-field">
+        <label class="form-label">Session name <span class="req">*</span></label>
+        <input name="sessionName" [(ngModel)]="name" placeholder="e.g. Acme Foods — Q2 tuning" autocomplete="off" />
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Prompt set to optimize <span class="req">*</span> <span class="lbl-meta">· {{ sets().length }} available</span></label>
+        <div class="search">
+          <span class="search-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span>
+          <input placeholder="Search prompt sets by name…" [ngModel]="setSearch()" (ngModelChange)="setSearch.set($event)" name="setSearch" />
+        </div>
+        <div class="select-list">
+          @for (s of filteredSets(); track s.id) {
+            <button type="button" class="select-row" [class.selected]="selectedSetId() === s.id" (click)="selectedSetId.set(s.id)">
+              <span class="radio" [class.on]="selectedSetId() === s.id"></span>
+              <span class="tile tile-system"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+              <span class="select-row-main">
+                <span class="sr-name">{{ s.name }}</span>
+                <span class="sr-meta">v{{ s.version }} · {{ s.prompt_count }} prompts · {{ s.section_count }} sections</span>
+              </span>
+            </button>
+          } @empty {
+            <div class="muted empty-hint">No prompt sets — create one first.</div>
+          }
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Model <span class="req">*</span></label>
+        @if (models().length === 0) {
+          <p class="muted">No connected models. <a routerLink="/models/new">Add a model</a> first.</p>
+        } @else {
+          <div class="provider-options">
+            @for (m of models(); track m.id) {
+              <button type="button" class="provider-option" [class.selected]="selectedModelId() === m.id" (click)="selectedModelId.set(m.id)">
+                <span class="radio" [class.on]="selectedModelId() === m.id"></span>
+                <span class="provider-tile provider-{{ providerKey(m.provider?.name) }}">{{ initial(m.name) }}</span>
+                <span class="provider-option-text">
+                  <span class="po-name">{{ m.name }}</span>
+                  <span class="po-sub">{{ m.provider?.name }}</span>
+                </span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Documents <span class="lbl-meta">· optional</span></label>
+        <div class="type-checks">
+          @for (ft of fileTypes(); track ft.id) {
+            <label class="type-check" [class.on]="isTypeEnabled(ft.id)">
+              <input type="checkbox" [checked]="isTypeEnabled(ft.id)" (change)="toggleType(ft.id)" />
+              {{ ft.description }}
+            </label>
+          }
+        </div>
+        @for (ft of fileTypes(); track ft.id) {
+          @if (isTypeEnabled(ft.id)) {
+            <div class="upload-zone">
+              <div class="uz-label">{{ ft.description }}</div>
+              <label class="drop-zone">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M8 9l4-4 4 4M5 19h14"/></svg>
+                <span>Drop files or <span class="link">browse</span></span>
+                <input type="file" multiple (change)="onFiles($event, ft.id)" />
+              </label>
+              @if (filesFor(ft.id).length) {
+                <div class="file-chips">
+                  @for (f of filesFor(ft.id); track $index) {
+                    <span class="file-chip">{{ f.name }} <button type="button" (click)="removeFile(ft.id, $index)">×</button></span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
+
+    <div class="model-form-foot">
+      <button class="ghost" type="button" routerLink="/optimizer">Cancel</button>
+      <button class="btn-primary" type="button" (click)="create()" [disabled]="!canSave() || saving()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h7M15 18h5"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="13" cy="18" r="2"/></svg>
+        {{ saving() ? 'Creating…' : 'Create session' }}
+      </button>
+    </div>
+  </div>
+</section>
