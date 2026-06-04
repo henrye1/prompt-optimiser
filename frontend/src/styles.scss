@@ -157,7 +157,8 @@ input[type='file'] { display: none; }
 .badge-draft { background: #eef0f3; color: var(--muted); }
 
 /* status badges (runs) */
-.badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.18rem 0.55rem; border-radius: 999px; background: #eef0f3; color: var(--muted); }
+.badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.18rem 0.55rem; border-radius: 999px; background: #eef0f3; color: var(--muted); }
+.badge svg, .count-tag svg { flex: none; }
 .badge.status-1 { background: #eef0f3; color: var(--muted); }
 .badge.status-2 { background: var(--violet-tint); color: var(--violet); }
 .badge.status-3 { background: var(--error-bg); color: var(--error-fg); }
@@ -230,7 +231,7 @@ input[type='file'] { display: none; }
 .pset-card .badge { flex: none; }
 .pset-desc { margin: 0.75rem 0 0; font-size: 0.88rem; line-height: 1.45; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.5em; }
 .pset-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.85rem; }
-.count-tag { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.18rem 0.5rem; border-radius: 6px; }
+.count-tag { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.18rem 0.5rem; border-radius: 6px; }
 .tag-system { background: var(--violet-tint); color: var(--violet); }
 .tag-assessment { background: var(--teal-tint); color: var(--teal); }
 .tag-audit { background: var(--amber-tint); color: var(--amber); }
