@@ -32,5 +32,17 @@ export function referenceRouter(): Router {
     }),
   );
 
+  router.get(
+    '/reference/ai-model-providers',
+    asyncHandler(async (req, res) => {
+      const { data, error } = await req
+        .supabase!.from('ai_model_provider')
+        .select('id, name')
+        .order('id');
+      throwOnError(error, 'List AI model providers');
+      res.json(data ?? []);
+    }),
+  );
+
   return router;
 }

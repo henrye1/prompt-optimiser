@@ -99,8 +99,8 @@ button {
 button:hover { background: #f6f7f9; }
 button:disabled { opacity: 0.45; cursor: default; }
 
-button[type='submit'], .btn-add { background: var(--green); color: #fff; border-color: transparent; }
-button[type='submit']:hover, .btn-add:hover { background: var(--green-deep); }
+button[type='submit']:not(.btn-primary), .btn-add { background: var(--green); color: #fff; border-color: transparent; }
+button[type='submit']:not(.btn-primary):hover, .btn-add:hover { background: var(--green-deep); }
 
 .btn-primary { background: var(--violet); color: #fff; border-color: transparent; }
 .btn-primary:hover { background: var(--violet-deep); }
@@ -238,6 +238,31 @@ input[type='file'] { display: none; }
 .pset-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 0.95rem; padding-top: 0.85rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); }
 .foot-item { display: inline-flex; align-items: center; gap: 0.4rem; }
 .foot-item svg { color: var(--faint); }
+
+/* ---------- Models ---------- */
+.model-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: 1rem; }
+.model-card { background: #fff; border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 1.1rem 1.2rem; }
+.model-head { display: flex; align-items: flex-start; gap: 0.7rem; }
+.provider-tile { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1.05rem; flex: none; }
+.provider-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.provider-google { background: var(--violet); }
+.provider-anthropic { background: #d97706; }
+.provider-other { background: #64748b; }
+.model-titles { flex: 1; min-width: 0; }
+.model-name { font-weight: 700; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.model-provider { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--muted); margin-top: 0.2rem; }
+.key-field { display: flex; align-items: center; gap: 0.5rem; background: #f7f8fa; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 0.55rem 0.7rem; margin-top: 0.9rem; }
+.key-field svg { color: var(--faint); flex: none; }
+.key-text { font-family: ui-monospace, 'SF Mono', monospace; font-size: 0.85rem; letter-spacing: 0.02em; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.model-foot { margin-top: 0.85rem; font-size: 0.78rem; color: var(--faint); }
+
+/* ---------- Modal ---------- */
+.modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 100; }
+.modal { background: #fff; border-radius: var(--r); box-shadow: var(--shadow-lg); padding: 1.5rem; width: 100%; max-width: 24rem; }
+.modal h2 { margin: 0 0 1.1rem; }
+.modal form { display: flex; flex-direction: column; gap: 0.9rem; }
+.modal label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem; }
 
 /* ---------- Prompt set editor ---------- */
 .set-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }

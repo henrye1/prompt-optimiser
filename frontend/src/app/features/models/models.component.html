@@ -1,0 +1,74 @@
+<section class="page">
+  <header class="landing-head">
+    <div>
+      <h1>Models</h1>
+      <p class="muted">Connect the models you want to run assessments against.</p>
+    </div>
+    <div class="landing-actions">
+      <button class="btn-primary" type="button" (click)="openAdd()">+ Add model</button>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <div class="model-grid">
+    @for (m of models(); track m.id) {
+      <div class="model-card">
+        <div class="model-head">
+          <span class="provider-tile provider-{{ providerKey(m.provider?.name) }}">{{ initial(m.name) }}</span>
+          <div class="model-titles">
+            <div class="model-name">{{ m.name }}</div>
+            <div class="model-provider">
+              <span class="provider-dot provider-{{ providerKey(m.provider?.name) }}"></span>
+              {{ m.provider?.name }}
+            </div>
+          </div>
+          <button class="icon-btn danger" type="button" title="Remove" (click)="remove(m)">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6"/></svg>
+          </button>
+        </div>
+        <div class="key-field">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          <span class="key-text">{{ m.api_key_masked }}</span>
+        </div>
+        <div class="model-foot">Added {{ formatDate(m.created_at) }}</div>
+      </div>
+    } @empty {
+      <p class="muted">No models yet. Use “+ Add model” to connect one.</p>
+    }
+  </div>
+</section>
+
+@if (showAdd()) {
+  <div class="modal-overlay" (click)="closeAdd()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Add a model</h2>
+      <form (ngSubmit)="addModel()">
+        <label>
+          Name
+          <input name="name" [(ngModel)]="newName" placeholder="e.g. Gemini 2.0 Pro" autocomplete="off" />
+        </label>
+        <label>
+          Provider
+          <select name="provider" [ngModel]="newProviderId()" (ngModelChange)="newProviderId.set($event)">
+            @for (p of providers(); track p.id) {
+              <option [ngValue]="p.id">{{ p.name }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          API key
+          <input type="password" name="apiKey" [(ngModel)]="newApiKey" placeholder="Paste the provider API key" autocomplete="off" />
+        </label>
+        <div class="modal-actions">
+          <button class="ghost" type="button" (click)="closeAdd()">Cancel</button>
+          <button class="btn-primary" type="submit" [disabled]="!canSave() || saving()">
+            {{ saving() ? 'Adding…' : 'Add model' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
