@@ -5,5 +5,5 @@ const app = createApp();
 
 app.listen(env.port, () => {
   // eslint-disable-next-line no-console
-  console.log(`Prompt Comparer API listening on http://localhost:${env.port}`);
+  console.log(`Prompt Optimiser API listening on http://localhost:${env.port}`);
 });

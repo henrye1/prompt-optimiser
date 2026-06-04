@@ -1,4 +1,4 @@
-# Prompt Comparer
+# Prompt Optimiser
 
 A prompt runner / comparison system. Authour reusable **PromptSets**, **run** them against
 the Gemini LLM (optionally feeding uploaded files as context), and **compare** two runs
