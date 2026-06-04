@@ -5,7 +5,7 @@
       <p class="muted">Connect the models you want to run assessments against.</p>
     </div>
     <div class="landing-actions">
-      <button class="btn-primary" type="button" (click)="openAdd()">+ Add model</button>
+      <button class="btn-primary" type="button" routerLink="/models/new">+ Add model</button>
     </div>
   </header>
 
@@ -40,35 +40,3 @@
     }
   </div>
 </section>
-
-@if (showAdd()) {
-  <div class="modal-overlay" (click)="closeAdd()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <h2>Add a model</h2>
-      <form (ngSubmit)="addModel()">
-        <label>
-          Name
-          <input name="name" [(ngModel)]="newName" placeholder="e.g. Gemini 2.0 Pro" autocomplete="off" />
-        </label>
-        <label>
-          Provider
-          <select name="provider" [ngModel]="newProviderId()" (ngModelChange)="newProviderId.set($event)">
-            @for (p of providers(); track p.id) {
-              <option [ngValue]="p.id">{{ p.name }}</option>
-            }
-          </select>
-        </label>
-        <label>
-          API key
-          <input type="password" name="apiKey" [(ngModel)]="newApiKey" placeholder="Paste the provider API key" autocomplete="off" />
-        </label>
-        <div class="modal-actions">
-          <button class="ghost" type="button" (click)="closeAdd()">Cancel</button>
-          <button class="btn-primary" type="submit" [disabled]="!canSave() || saving()">
-            {{ saving() ? 'Adding…' : 'Add model' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-}

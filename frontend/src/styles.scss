@@ -256,13 +256,33 @@ input[type='file'] { display: none; }
 .key-text { font-family: ui-monospace, 'SF Mono', monospace; font-size: 0.85rem; letter-spacing: 0.02em; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .model-foot { margin-top: 0.85rem; font-size: 0.78rem; color: var(--faint); }
 
-/* ---------- Modal ---------- */
-.modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 100; }
-.modal { background: #fff; border-radius: var(--r); box-shadow: var(--shadow-lg); padding: 1.5rem; width: 100%; max-width: 24rem; }
-.modal h2 { margin: 0 0 1.1rem; }
-.modal form { display: flex; flex-direction: column; gap: 0.9rem; }
-.modal label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem; }
+/* ---------- Add-model form ---------- */
+.form-page .model-form { max-width: 40rem; margin-left: auto; margin-right: auto; }
+.model-form { background: #fff; border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+.model-form-head { display: flex; align-items: flex-start; gap: 0.75rem; padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--border); }
+.mf-title { font-weight: 700; font-size: 1.05rem; }
+.mf-sub { font-size: 0.85rem; margin-top: 0.15rem; }
+.model-form-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1.1rem; }
+.form-field { display: flex; flex-direction: column; }
+.form-label { display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); margin-bottom: 0.45rem; }
+.req { color: #ef4444; }
+.provider-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.provider-option { display: flex; align-items: center; justify-content: flex-start; gap: 0.6rem; text-align: left; background: #fff; border: 1px solid var(--border-strong); border-radius: var(--r-sm); padding: 0.7rem 0.85rem; cursor: pointer; }
+.provider-option:hover { border-color: var(--violet); background: #faf9ff; }
+.provider-option.selected { border-color: var(--violet); background: var(--lavender); }
+.radio { position: relative; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border-strong); flex: none; }
+.radio.on { border-color: var(--violet); }
+.radio.on::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--violet); }
+.provider-option .provider-tile { width: 28px; height: 28px; font-size: 0.8rem; border-radius: 7px; }
+.provider-option-text { display: flex; flex-direction: column; min-width: 0; }
+.po-name { font-weight: 700; font-size: 0.9rem; color: var(--text); }
+.po-hint { font-size: 0.75rem; color: var(--faint); font-family: ui-monospace, monospace; }
+.key-input-wrap { position: relative; }
+.key-input-wrap input { width: 100%; padding-right: 2.3rem; }
+.key-eye { position: absolute; right: 0.4rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--faint); padding: 0.25rem; }
+.key-eye:hover { color: var(--text); background: transparent; }
+.form-hint { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: var(--faint); margin-top: 0.45rem; }
+.model-form-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 1rem 1.25rem; border-top: 1px solid var(--border); }
 
 /* ---------- Prompt set editor ---------- */
 .set-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }

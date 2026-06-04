@@ -43,6 +43,12 @@ export const routes: Routes = [
       import('./features/models/models.component').then((m) => m.ModelsComponent),
   },
   {
+    path: 'models/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/models/model-add.component').then((m) => m.ModelAddComponent),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () =>
