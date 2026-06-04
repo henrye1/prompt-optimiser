@@ -72,11 +72,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/models/model-add.component').then((m) => m.ModelAddComponent),
   },
-  {
-    path: '',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/home/home.component').then((m) => m.HomeComponent),
-  },
-  { path: '**', redirectTo: '' },
+  { path: '', pathMatch: 'full', redirectTo: 'runs' },
+  { path: '**', redirectTo: 'runs' },
 ];

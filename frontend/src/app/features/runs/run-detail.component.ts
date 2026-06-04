@@ -4,13 +4,14 @@ import { marked } from 'marked';
 import { RunsService } from './runs.service';
 import { AuthService } from '../../core/auth.service';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
+import { LoaderComponent } from '../../shared/loader.component';
 import { RUN_STATUS, type RunDetail, type RunSection } from './run.models';
 
 export type ExportFormat = 'md' | 'pdf' | 'word';
 
 @Component({
   selector: 'app-run-detail',
-  imports: [RouterLink, MarkdownPipe],
+  imports: [RouterLink, MarkdownPipe, LoaderComponent],
   templateUrl: './run-detail.component.html',
 })
 export class RunDetailComponent implements OnDestroy {

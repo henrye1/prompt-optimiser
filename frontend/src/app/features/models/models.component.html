@@ -13,6 +13,9 @@
     <p class="error">{{ error() }}</p>
   }
 
+  @if (loading()) {
+    <app-loader label="Loading models…" />
+  } @else {
   <div class="model-grid">
     @for (m of models(); track m.id) {
       <div class="model-card">
@@ -39,4 +42,5 @@
       <p class="muted">No models yet. Use “+ Add model” to connect one.</p>
     }
   </div>
+  }
 </section>

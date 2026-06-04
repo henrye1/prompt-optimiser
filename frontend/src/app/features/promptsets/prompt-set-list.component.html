@@ -37,7 +37,9 @@
     <p class="error">{{ error() }}</p>
   }
 
-  @if (filtered().length > 0) {
+  @if (loading()) {
+    <app-loader label="Loading prompt sets…" />
+  } @else if (filtered().length > 0) {
     <div class="pset-grid">
       @for (s of filtered(); track s.id) {
         <a class="pset-card" [routerLink]="['/prompt-sets', s.id]">

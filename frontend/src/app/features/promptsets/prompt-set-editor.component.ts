@@ -2,13 +2,14 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PromptSetsService } from './promptsets.service';
+import { LoaderComponent } from '../../shared/loader.component';
 import { readJsonFile } from '../../core/json-file';
 import type { Prompt, PromptSetDetail, PromptType } from './promptset.models';
 
 /** Single prompt set editor: prompts list (left) + section editor (right). */
 @Component({
   selector: 'app-prompt-set-editor',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, LoaderComponent],
   templateUrl: './prompt-set-editor.component.html',
 })
 export class PromptSetEditorComponent {

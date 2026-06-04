@@ -1,12 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { OptimizerService } from './optimizer.service';
+import { LoaderComponent } from '../../shared/loader.component';
 import type { OptimizerSessionCard } from './optimizer.models';
 
 /** Optimizer landing page: a grid of tuning sessions. */
 @Component({
   selector: 'app-optimizer-list',
-  imports: [RouterLink],
+  imports: [RouterLink, LoaderComponent],
   templateUrl: './optimizer-list.component.html',
 })
 export class OptimizerListComponent {
@@ -14,6 +15,7 @@ export class OptimizerListComponent {
 
   readonly sessions = signal<OptimizerSessionCard[]>([]);
   readonly error = signal<string | null>(null);
+  readonly loading = signal(true);
 
   constructor() {
     void this.load();
@@ -24,6 +26,8 @@ export class OptimizerListComponent {
       this.sessions.set(await this.api.list());
     } catch {
       this.error.set('Failed to load sessions');
+    } finally {
+      this.loading.set(false);
     }
   }
 

@@ -5,6 +5,7 @@ import { OptimizerService } from './optimizer.service';
 import { PromptSetsService } from '../promptsets/promptsets.service';
 import { ModelsService } from '../models/models.service';
 import { RunsService } from '../runs/runs.service';
+import { LoaderComponent } from '../../shared/loader.component';
 import type { PromptSetSummary } from '../promptsets/promptset.models';
 import type { AiModel } from '../models/model.models';
 
@@ -16,7 +17,7 @@ interface FileType {
 /** New optimization session (/optimizer/new): same settings as a run. */
 @Component({
   selector: 'app-optimizer-new',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, LoaderComponent],
   templateUrl: './optimizer-new.component.html',
 })
 export class OptimizerNewComponent {
@@ -31,6 +32,7 @@ export class OptimizerNewComponent {
   readonly fileTypes = signal<FileType[]>([]);
   readonly error = signal<string | null>(null);
   readonly saving = signal(false);
+  readonly loading = signal(true);
 
   name = '';
   readonly setSearch = signal('');
@@ -60,6 +62,8 @@ export class OptimizerNewComponent {
       this.fileTypes.set(fileTypes);
     } catch {
       this.error.set('Failed to load prompt sets and models');
+    } finally {
+      this.loading.set(false);
     }
   }
 

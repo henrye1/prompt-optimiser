@@ -1,12 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ModelsService } from './models.service';
+import { LoaderComponent } from '../../shared/loader.component';
 import type { AiModel } from './model.models';
 
 /** Models list page. The add-model form lives on its own /models/new route. */
 @Component({
   selector: 'app-models',
-  imports: [RouterLink],
+  imports: [RouterLink, LoaderComponent],
   templateUrl: './models.component.html',
 })
 export class ModelsComponent {
@@ -15,6 +16,7 @@ export class ModelsComponent {
 
   readonly models = signal<AiModel[]>([]);
   readonly error = signal<string | null>(null);
+  readonly loading = signal(true);
 
   constructor() {
     void this.reload();
@@ -26,6 +28,8 @@ export class ModelsComponent {
       this.models.set(await this.api.list());
     } catch {
       this.error.set('Failed to load models');
+    } finally {
+      this.loading.set(false);
     }
   }
 

@@ -10,6 +10,9 @@
     </button>
   </div>
 
+  @if (loading()) {
+    <app-loader label="Loading runs…" />
+  } @else {
   <div class="filter-bar">
     <div class="seg">
       <button type="button" class="seg-btn" [class.active]="tab() === 'mine'" (click)="tab.set('mine')">
@@ -93,5 +96,6 @@
       @if (tab() === 'mine') { No runs yet. Start one with “New run”. }
       @else { No published runs from your team yet. }
     </p>
+  }
   }
 </section>

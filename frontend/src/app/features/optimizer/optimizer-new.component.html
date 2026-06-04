@@ -5,6 +5,9 @@
     <p class="error">{{ error() }}</p>
   }
 
+  @if (loading()) {
+    <app-loader />
+  } @else {
   <div class="model-form run-form">
     <div class="model-form-head">
       <span class="tile tile-system">
@@ -104,4 +107,5 @@
       </button>
     </div>
   </div>
+  }
 </section>

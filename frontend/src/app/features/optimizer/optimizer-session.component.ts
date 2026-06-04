@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OptimizerService } from './optimizer.service';
 import { AuthService } from '../../core/auth.service';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
+import { LoaderComponent } from '../../shared/loader.component';
 import type { OptimizerSection, OptimizerSession } from './optimizer.models';
 
 interface SectionGroup {
@@ -15,7 +16,7 @@ interface SectionGroup {
 /** Optimizer session workspace: tune a section's prompt, rerun, and save as a new set version. */
 @Component({
   selector: 'app-optimizer-session',
-  imports: [FormsModule, RouterLink, MarkdownPipe],
+  imports: [FormsModule, RouterLink, MarkdownPipe, LoaderComponent],
   templateUrl: './optimizer-session.component.html',
 })
 export class OptimizerSessionComponent {

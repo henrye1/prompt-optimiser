@@ -2,12 +2,13 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ModelsService } from './models.service';
+import { LoaderComponent } from '../../shared/loader.component';
 import type { AiModelProvider } from './model.models';
 
 /** Standalone "Add a model" page (/models/new). */
 @Component({
   selector: 'app-model-add',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, LoaderComponent],
   templateUrl: './model-add.component.html',
 })
 export class ModelAddComponent {
@@ -17,6 +18,7 @@ export class ModelAddComponent {
   readonly providers = signal<AiModelProvider[]>([]);
   readonly error = signal<string | null>(null);
   readonly saving = signal(false);
+  readonly loading = signal(true);
   readonly showKey = signal(false);
 
   name = '';
@@ -39,6 +41,8 @@ export class ModelAddComponent {
       this.providerId.set(providers[0]?.id ?? null);
     } catch {
       this.error.set('Failed to load providers');
+    } finally {
+      this.loading.set(false);
     }
   }
 

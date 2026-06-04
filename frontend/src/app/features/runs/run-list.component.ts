@@ -3,11 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { RunsService } from './runs.service';
 import { AuthService } from '../../core/auth.service';
+import { LoaderComponent } from '../../shared/loader.component';
 import { RUN_STATUS, type RunCard } from './run.models';
 
 @Component({
   selector: 'app-run-list',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, LoaderComponent],
   templateUrl: './run-list.component.html',
 })
 export class RunListComponent {
@@ -18,6 +19,7 @@ export class RunListComponent {
 
   readonly runs = signal<RunCard[]>([]);
   readonly error = signal<string | null>(null);
+  readonly loading = signal(true);
   readonly search = signal('');
   readonly tab = signal<'mine' | 'published'>('mine');
   readonly statusLabel = RUN_STATUS;
@@ -48,6 +50,8 @@ export class RunListComponent {
       this.runs.set(await this.api.list());
     } catch {
       this.error.set('Failed to load runs');
+    } finally {
+      this.loading.set(false);
     }
   }
 

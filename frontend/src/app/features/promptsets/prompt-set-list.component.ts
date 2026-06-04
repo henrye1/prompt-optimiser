@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { PromptSetsService } from './promptsets.service';
+import { LoaderComponent } from '../../shared/loader.component';
 import { readJsonFile } from '../../core/json-file';
 import type { PromptSetSummary } from './promptset.models';
 
@@ -10,7 +11,7 @@ type StatusFilter = 'all' | 'published' | 'drafts';
 /** Prompt Sets landing — rich cards that open the single-set editor. */
 @Component({
   selector: 'app-prompt-set-list',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, LoaderComponent],
   templateUrl: './prompt-set-list.component.html',
 })
 export class PromptSetListComponent {
@@ -20,6 +21,7 @@ export class PromptSetListComponent {
 
   readonly sets = signal<PromptSetSummary[]>([]);
   readonly error = signal<string | null>(null);
+  readonly loading = signal(true);
   readonly search = signal('');
   readonly status = signal<StatusFilter>('all');
 
@@ -47,6 +49,8 @@ export class PromptSetListComponent {
       this.sets.set(await this.api.list());
     } catch {
       this.error.set('Failed to load prompt sets');
+    } finally {
+      this.loading.set(false);
     }
   }
 

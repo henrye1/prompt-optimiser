@@ -182,5 +182,7 @@
     </div>
   } @else if (error()) {
     <p class="error">{{ error() }}</p>
+  } @else {
+    <app-loader label="Loading session…" />
   }
 </section>

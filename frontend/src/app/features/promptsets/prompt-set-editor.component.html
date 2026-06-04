@@ -154,6 +154,9 @@
       </div>
     </div>
   } @else if (error()) {
+    <a class="crumb" routerLink="/prompt-sets">← Prompt Sets</a>
     <p class="error">{{ error() }}</p>
+  } @else {
+    <app-loader label="Loading prompt set…" />
   }
 </section>

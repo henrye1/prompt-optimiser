@@ -14,6 +14,9 @@
     <p class="error">{{ error() }}</p>
   }
 
+  @if (loading()) {
+    <app-loader label="Loading sessions…" />
+  } @else {
   <div class="opt-grid">
     @for (s of sessions(); track s.id) {
       <a class="opt-card" [routerLink]="['/optimizer', s.id]">
@@ -55,4 +58,5 @@
       <p class="muted">No sessions yet. Start one with “New session”.</p>
     }
   </div>
+  }
 </section>

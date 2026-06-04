@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { RunsService } from './runs.service';
 import { PromptSetsService } from '../promptsets/promptsets.service';
 import { ModelsService } from '../models/models.service';
+import { LoaderComponent } from '../../shared/loader.component';
 import type { PromptSetSummary } from '../promptsets/promptset.models';
 import type { AiModel } from '../models/model.models';
 
@@ -15,7 +16,7 @@ interface FileType {
 /** New run form (/runs/new): name + prompt set + model + categorised file uploads. */
 @Component({
   selector: 'app-run-new',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, LoaderComponent],
   templateUrl: './run-new.component.html',
 })
 export class RunNewComponent {
@@ -29,6 +30,7 @@ export class RunNewComponent {
   readonly fileTypes = signal<FileType[]>([]);
   readonly error = signal<string | null>(null);
   readonly saving = signal(false);
+  readonly loading = signal(true);
 
   name = '';
   readonly setSearch = signal('');
@@ -58,6 +60,8 @@ export class RunNewComponent {
       this.fileTypes.set(fileTypes);
     } catch {
       this.error.set('Failed to load prompt sets and models');
+    } finally {
+      this.loading.set(false);
     }
   }
 
