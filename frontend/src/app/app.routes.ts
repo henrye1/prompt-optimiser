@@ -61,6 +61,24 @@ export const routes: Routes = [
       import('./features/optimizer/optimizer-session.component').then((m) => m.OptimizerSessionComponent),
   },
   {
+    path: 'prompt-review',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/prompt-review/prompt-review-list.component').then((m) => m.PromptReviewListComponent),
+  },
+  {
+    path: 'prompt-review/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/prompt-review/prompt-review-new.component').then((m) => m.PromptReviewNewComponent),
+  },
+  {
+    path: 'prompt-review/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/prompt-review/prompt-review-editor.component').then((m) => m.PromptReviewEditorComponent),
+  },
+  {
     path: 'models',
     canActivate: [authGuard],
     loadComponent: () =>

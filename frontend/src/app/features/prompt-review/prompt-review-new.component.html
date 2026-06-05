@@ -1,0 +1,86 @@
+<section class="page">
+  <a class="crumb" routerLink="/prompt-review">← Sessions</a>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <app-loader />
+  } @else {
+  <div class="model-form run-form">
+    <div class="model-form-head">
+      <span class="tile tile-system">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg>
+      </span>
+      <div>
+        <div class="mf-title">New prompt review session</div>
+        <div class="muted mf-sub">Load a prompt set as one editable document — then audit, clean, restructure and improve it, and publish a new set.</div>
+      </div>
+    </div>
+
+    <div class="model-form-body">
+      <div class="form-field">
+        <label class="form-label">Session name <span class="req">*</span></label>
+        <input name="sessionName" [(ngModel)]="name" placeholder="e.g. Credit Assessment — clean & restructure" autocomplete="off" />
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Load a prompt set <span class="lbl-meta">· {{ sets().length }} available</span></label>
+        <div class="search">
+          <span class="search-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span>
+          <input placeholder="Search prompt sets by name…" [ngModel]="setSearch()" (ngModelChange)="setSearch.set($event)" name="setSearch" />
+        </div>
+        <div class="select-list">
+          <button type="button" class="select-row" [class.selected]="selectedSetId() === null" (click)="selectedSetId.set(null)">
+            <span class="radio" [class.on]="selectedSetId() === null"></span>
+            <span class="tile tile-system"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></span>
+            <span class="select-row-main">
+              <span class="sr-name">Start from a blank document</span>
+              <span class="sr-meta">One empty System prompt to build from</span>
+            </span>
+          </button>
+          @for (s of filteredSets(); track s.id) {
+            <button type="button" class="select-row" [class.selected]="selectedSetId() === s.id" (click)="selectedSetId.set(s.id)">
+              <span class="radio" [class.on]="selectedSetId() === s.id"></span>
+              <span class="tile tile-system"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+              <span class="select-row-main">
+                <span class="sr-name">{{ s.name }}</span>
+                <span class="sr-meta">v{{ s.version }} · {{ s.prompt_count }} prompts · {{ s.section_count }} sections</span>
+              </span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Model <span class="lbl-meta">· used by the AI tools</span></label>
+        @if (models().length === 0) {
+          <p class="muted">No connected models — the server default will be used. <a routerLink="/models/new">Add a model</a> to choose one.</p>
+        } @else {
+          <div class="provider-options">
+            @for (m of models(); track m.id) {
+              <button type="button" class="provider-option" [class.selected]="selectedModelId() === m.id" (click)="selectedModelId.set(m.id)">
+                <span class="radio" [class.on]="selectedModelId() === m.id"></span>
+                <span class="provider-tile provider-{{ providerKey(m.provider?.name) }}">{{ initial(m.name) }}</span>
+                <span class="provider-option-text">
+                  <span class="po-name">{{ m.name }}</span>
+                  <span class="po-sub">{{ m.provider?.name }}</span>
+                </span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="model-form-foot">
+      <button class="ghost" type="button" routerLink="/prompt-review">Cancel</button>
+      <button class="btn-primary" type="button" (click)="create()" [disabled]="!canSave() || saving()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg>
+        {{ saving() ? 'Opening…' : 'Open review' }}
+      </button>
+    </div>
+  </div>
+  }
+</section>

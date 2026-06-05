@@ -1,0 +1,516 @@
+@let s = session();
+
+<section class="page pg-page">
+  <a class="crumb" routerLink="/prompt-review">← Sessions</a>
+
+  @if (s) {
+    <!-- Header -->
+    <div class="opt-head">
+      <div class="opt-head-main">
+        <h1 class="run-title">{{ s.name }}</h1>
+        <div class="run-meta">
+          <span class="rm-set">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            {{ s.source?.name || 'Blank document' }}
+          </span>
+          @if (s.ai_model) {
+            <span class="model-badge">
+              <span class="mb-tile provider-{{ providerKey(s.ai_model.provider?.name) }}">{{ initial(s.ai_model.name) }}</span>
+              {{ s.ai_model.name }}
+            </span>
+          }
+          <span class="rm-date">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="m10 13-2 2 2 2"/><path d="m14 13 2 2-2 2"/></svg>
+            {{ promptCount() }} prompts · {{ sectionCount() }} sections
+          </span>
+        </div>
+      </div>
+      @if (isOwner()) {
+        <button class="btn-add save-set" type="button" (click)="openPublish()">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>
+          Publish as set
+        </button>
+      }
+    </div>
+
+    @if (error()) { <p class="error">{{ error() }}</p> }
+
+    <div class="pg-grid">
+      <!-- Outline -->
+      <aside class="pg-outline">
+        <div class="pg-health">
+          @if (reviewed()) {
+            <div class="pg-health-ring {{ healthTone(health().score) }}">
+              <svg viewBox="0 0 64 64" width="64" height="64">
+                <circle cx="32" cy="32" r="26" class="track"/>
+                <circle cx="32" cy="32" r="26" class="bar" [attr.stroke-dasharray]="ringCirc" [attr.stroke-dashoffset]="ringOffset(health().score)" transform="rotate(-90 32 32)"/>
+              </svg>
+              <div class="pg-health-num">{{ health().score }}</div>
+            </div>
+            <div class="pg-health-text">
+              <div class="b">{{ health().band }}</div>
+              <div class="s">{{ findings().length === 0 ? 'No issues found' : findings().length + (findings().length > 1 ? ' issues to review' : ' issue to review') }}</div>
+            </div>
+          } @else {
+            <div class="pg-health-ring idle">
+              <svg viewBox="0 0 64 64" width="64" height="64"><circle cx="32" cy="32" r="26" class="track"/></svg>
+              <div class="pg-health-num">–</div>
+            </div>
+            <div class="pg-health-text">
+              <div class="b">Not reviewed yet</div>
+              <div class="s">Run a review to check it</div>
+            </div>
+          }
+        </div>
+
+        <div class="pg-outline-label">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="m10 13-2 2 2 2"/><path d="m14 13 2 2-2 2"/></svg>
+          Document outline
+        </div>
+        <div class="pg-outline-list">
+          @for (p of prompts(); track p.id) {
+            <div class="pg-ol-group">
+              <div class="pg-ol-prompt">
+                <span class="type-badge type-{{ typeKey(p.prompt_type?.description) }}">{{ p.prompt_type?.description }}</span>
+                <span class="nm">{{ p.name }}</span>
+              </div>
+              @for (sec of p.sections; track sec.id) {
+                <div class="pg-ol-sec" [class.active]="selSecId() === sec.id" (click)="selectSection(sec.id)">
+                  <span class="t">{{ sec.title }}</span>
+                  @if (worstForSec(sec.id); as w) {
+                    <span class="pg-ol-dot {{ w }}">{{ findingsForSec(sec.id).length }}</span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+        @if (isOwner()) {
+          <button class="pg-add-prompt" type="button" (click)="addPrompt()">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add prompt
+          </button>
+        }
+      </aside>
+
+      <!-- Document -->
+      <div class="pg-doc">
+        @for (p of prompts(); track p.id) {
+          <section class="pg-prompt">
+            <div class="pg-prompt-head">
+              <span class="type-badge type-{{ typeKey(p.prompt_type?.description) }}">{{ p.prompt_type?.description }}</span>
+              <input class="pg-prompt-name" [ngModel]="p.name" (ngModelChange)="renamePrompt(p.id, $event)" [disabled]="!isOwner()" />
+              @if (isOwner()) {
+                <div class="pg-type-sel">
+                  <select [ngModel]="p.prompt_type_id" (ngModelChange)="setPromptType(p.id, $event)">
+                    @for (t of promptTypes(); track t.id) { <option [ngValue]="t.id">{{ t.description }}</option> }
+                  </select>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <button class="icon-btn" type="button" title="Add section" (click)="addSection(p.id)">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+                @if (prompts().length > 1) {
+                  <button class="icon-btn danger" type="button" title="Delete prompt" (click)="deletePrompt(p.id)">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
+                }
+              }
+            </div>
+
+            @for (sec of p.sections; track sec.id) {
+              <div class="pg-block" id="sec-{{ sec.id }}" [class.active]="selSecId() === sec.id" (mousedown)="selectSection(sec.id, false)">
+                <div class="pg-block-head">
+                  <input class="pg-block-title" [ngModel]="sec.title" (ngModelChange)="onSectionField(sec.id, { title: $event })" [disabled]="!isOwner()" />
+                  @if (worstForSec(sec.id); as w) {
+                    <button class="pg-block-issues {{ w }}" type="button" (click)="filterToSection(sec.id)">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                      {{ findingsForSec(sec.id).length }} {{ findingsForSec(sec.id).length > 1 ? 'issues' : 'issue' }}
+                    </button>
+                  }
+                  @if (isOwner()) {
+                    <div class="pg-block-tools">
+                      <button class="pg-tool" type="button" (click)="openImprove(sec.id)">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+                        Improve
+                      </button>
+                      @if (p.sections.length > 1) {
+                        <button class="pg-tool icon" type="button" title="Delete section" (click)="deleteSection(sec.id)">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+                <textarea class="pg-block-area" rows="3" [ngModel]="sec.content" (ngModelChange)="onSectionField(sec.id, { content: $event })" [disabled]="!isOwner()" placeholder="Write the instruction for this section…"></textarea>
+
+                @if (aiSecId() === sec.id) {
+                  <div class="opt-ai">
+                    <div class="opt-ai-head">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+                      <span class="t">Improve with AI</span>
+                      <button class="opt-ai-x" type="button" (click)="closeAi()">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                      </button>
+                    </div>
+                    @if (aiBusy()) {
+                      <div class="pg-ai-thinking">
+                        <svg class="spin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M3 12h4M17 12h4M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>
+                        Working on it…
+                      </div>
+                    } @else if (aiResult() !== null) {
+                      <div class="opt-ai-result">
+                        <div class="opt-ai-result-label">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8h4M7 6v4"/><path d="M15 16h4"/></svg>
+                          Suggested rewrite
+                          <span class="leg"><i class="ins"></i>added<i class="del"></i>removed</span>
+                        </div>
+                        <div class="opt-ai-diff">
+                          @for (d of aiDiffSegments(); track $index) {
+                            @switch (d.t) {
+                              @case ('ins') { <ins>{{ d.v }}</ins> }
+                              @case ('del') { <del>{{ d.v }}</del> }
+                              @default { <span>{{ d.v }}</span> }
+                            }
+                          }
+                        </div>
+                        <div class="opt-ai-apply">
+                          <button class="ghost" type="button" (click)="aiResult.set(null)">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+                            Try again
+                          </button>
+                          <span class="spacer"></span>
+                          <button class="opt-ai-soft" type="button" (click)="closeAi()">Discard</button>
+                          <button class="btn-primary" type="button" (click)="applyAi()">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="pg-presets">
+                        @for (pr of presets; track pr.label) {
+                          <button class="pg-preset" type="button" (click)="runPreset(pr)">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+                            {{ pr.label }}
+                          </button>
+                        }
+                      </div>
+                      <label class="opt-ai-label">…or describe your own goal</label>
+                      <textarea class="opt-ai-goal" rows="2" [ngModel]="aiGoal()" (ngModelChange)="aiGoal.set($event)" placeholder="e.g. Make it more specific and require figures to be cited"></textarea>
+                      <div class="opt-ai-actions">
+                        <button class="btn-primary" type="button" [disabled]="!aiGoal().trim()" (click)="generateAi()">
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+                          Generate suggestion
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </section>
+        }
+      </div>
+
+      <!-- Assistant / findings -->
+      <aside class="pg-assist" id="pg-assist">
+        @if (!reviewed()) {
+          <div class="pg-intro">
+            <div class="pg-intro-ic">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg>
+            </div>
+            <h3>Tune this prompt set</h3>
+            <ol class="pg-steps">
+              <li><b>Edit</b> the prompts in the document on the left.</li>
+              <li><b>Review</b> — AI scans for weak or risky instructions.</li>
+              <li><b>Improve</b> — apply the rewrites it suggests.</li>
+              <li><b>Publish</b> it as a new prompt set.</li>
+            </ol>
+            <button class="btn-primary pg-block-btn" type="button" [disabled]="reviewing()" (click)="review()">
+              @if (reviewing()) {
+                <svg class="spin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M3 12h4M17 12h4M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>
+                Reviewing…
+              } @else {
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                Review document
+              }
+            </button>
+            <button class="pg-text-action" type="button" (click)="openImproveDoc()">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+              or improve it toward a goal
+            </button>
+          </div>
+        } @else {
+          <div class="pg-assist-card pg-assist-bar">
+            <button class="ghost" type="button" [disabled]="reviewing()" (click)="review()">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+              Re-review
+            </button>
+            <button class="btn-primary" type="button" (click)="openImproveDoc()">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+              Improve
+            </button>
+          </div>
+
+          <div class="pg-findings">
+            <div class="pg-findings-head">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              Findings<span class="ct">{{ findings().length }}</span>
+            </div>
+            <div class="pg-sev-filter">
+              <button class="pg-sev-chip" [class.active]="sevFilter() === 'all'" (click)="sevFilter.set('all')">All</button>
+              <button class="pg-sev-chip high" [class.active]="sevFilter() === 'high'" (click)="sevFilter.set('high')">High<span class="n">{{ sevCounts().high }}</span></button>
+              <button class="pg-sev-chip med" [class.active]="sevFilter() === 'med'" (click)="sevFilter.set('med')">Medium<span class="n">{{ sevCounts().med }}</span></button>
+              <button class="pg-sev-chip low" [class.active]="sevFilter() === 'low'" (click)="sevFilter.set('low')">Low<span class="n">{{ sevCounts().low }}</span></button>
+            </div>
+            @if (secFilter()) {
+              <div class="pg-filter-note">Showing one section
+                <button type="button" (click)="secFilter.set(null)">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  clear
+                </button>
+              </div>
+            }
+            <div class="pg-findings-list">
+              @for (f of shownFindings(); track f.id) {
+                <div class="pg-finding {{ f.severity }}">
+                  <div class="pg-finding-top">
+                    <span class="pg-sev {{ f.severity }}">{{ sevLabel(f.severity) }}</span>
+                    <span class="pg-finding-kind">{{ f.kind }}</span>
+                  </div>
+                  <div class="pg-finding-msg">{{ f.message }}</div>
+                  <div class="pg-finding-loc">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    {{ f.promptName }}{{ f.sectionTitle ? ' · ' + f.sectionTitle : '' }}
+                  </div>
+                  <div class="pg-finding-acts">
+                    @if (f.sectionId) {
+                      <button class="pg-finding-btn" type="button" (click)="jumpTo(f)">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        Jump
+                      </button>
+                    }
+                    @if (f.fix === '__restructure__') {
+                      <button class="pg-finding-btn primary" type="button" (click)="applyFix(f)">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></svg>
+                        Restructure
+                      </button>
+                    } @else if (f.fix) {
+                      <button class="pg-finding-btn primary" type="button" (click)="applyFix(f)">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        Apply fix
+                      </button>
+                    }
+                  </div>
+                </div>
+              } @empty {
+                <div class="pg-findings-empty">
+                  <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 5-5"/></svg>
+                  <div>{{ findings().length === 0 ? 'No issues found — this set looks clean. Ready to publish.' : 'Nothing matches this filter.' }}</div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </aside>
+    </div>
+  } @else if (error()) {
+    <p class="error">{{ error() }}</p>
+  } @else {
+    <app-loader label="Loading session…" />
+  }
+</section>
+
+<!-- Modals -->
+@if (modal(); as m) {
+  <div class="pg-backdrop" (mousedown)="closeModal()">
+    <div class="pg-modal" (mousedown)="$event.stopPropagation()">
+      @switch (m) {
+        @case ('improve') {
+          @if (impItems() === null) {
+            <div class="pg-modal-head">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+              <h2>Improve the whole document</h2>
+              <button class="opt-ai-x" type="button" (click)="closeModal()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
+            <div class="pg-modal-body">
+              <label class="opt-ai-label">Quick options</label>
+              <div class="pg-presets">
+                @for (pr of presets; track pr.label) {
+                  <button class="pg-preset" type="button" [disabled]="impBusy()" (click)="runImproveDoc(pr.goal)">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+                    {{ pr.label }}
+                  </button>
+                }
+              </div>
+              <label class="opt-ai-label" style="margin-top: 0.85rem">…or describe your own goal across every section</label>
+              <textarea class="opt-ai-goal" rows="3" [ngModel]="impGoal()" (ngModelChange)="impGoal.set($event)" [disabled]="impBusy()" placeholder="e.g. Make instructions specific, require grounding in the source documents, and a consistent output format"></textarea>
+            </div>
+            <div class="pg-modal-foot">
+              <button class="ghost" type="button" (click)="closeModal()">Cancel</button>
+              <span class="spacer"></span>
+              <button class="btn-primary" type="button" [disabled]="impBusy() || !impGoal().trim()" (click)="runImproveDoc()">
+                @if (impBusy()) {
+                  <svg class="spin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M3 12h4M17 12h4M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>
+                  Thinking…
+                } @else {
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+                  Generate suggestions
+                }
+              </button>
+            </div>
+          } @else {
+            <div class="pg-modal-head">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+              <h2>Improve — review changes</h2>
+              <button class="opt-ai-x" type="button" (click)="closeModal()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
+            <div class="pg-modal-body">
+              @if (improveRemaining().length === 0) {
+                <div class="pg-modal-empty">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 5-5"/></svg>
+                  {{ (impItems() ?? []).length === 0 ? 'Nothing to change — this document is already on-goal.' : 'All changes applied.' }}
+                </div>
+              } @else {
+                @for (it of improveRemaining(); track it.sectionId) {
+                  <div class="pg-change">
+                    <div class="pg-change-loc">{{ it.promptName }} · {{ it.sectionTitle }}</div>
+                    <div class="opt-ai-diff">
+                      @for (d of diffOf(it.before, it.after); track $index) {
+                        @switch (d.t) {
+                          @case ('ins') { <ins>{{ d.v }}</ins> }
+                          @case ('del') { <del>{{ d.v }}</del> }
+                          @default { <span>{{ d.v }}</span> }
+                        }
+                      }
+                    </div>
+                    <div class="pg-change-acts">
+                      <button class="pg-finding-btn primary" type="button" (click)="applyChange(it)">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+            <div class="pg-modal-foot">
+              <button class="ghost" type="button" (click)="closeModal()">Close</button>
+              <span class="spacer"></span>
+              @if (improveRemaining().length > 0) {
+                <button class="btn-primary" type="button" (click)="applyAllChanges()">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  Apply all ({{ improveRemaining().length }})
+                </button>
+              }
+            </div>
+          }
+        }
+        @case ('restructure') {
+          <div class="pg-modal-head">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></svg>
+            <h2>Restructure — proposed changes</h2>
+            <button class="opt-ai-x" type="button" (click)="closeModal()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+          </div>
+          <div class="pg-modal-body">
+            @if (restructure(); as r) {
+              @if (r.changes.length === 0) {
+                <div class="pg-modal-empty">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 5-5"/></svg>
+                  Already well-structured — nothing to reorder.
+                </div>
+              } @else {
+                <div class="pg-restruct-sub">{{ r.changes.length }} {{ r.changes.length > 1 ? 'changes' : 'change' }} · prompts grouped by type, section titles standardised.</div>
+                <div class="pg-change-rows">
+                  @for (c of r.changes; track $index) {
+                    <div class="pg-restruct-row"><span class="pg-restruct-tag {{ c.type }}">{{ c.type }}</span><span>{{ c.label }}</span></div>
+                  }
+                </div>
+                <div class="pg-restruct-preview-label">New order</div>
+                <div class="pg-restruct-preview">
+                  @for (p of r.prompts; track p.id) {
+                    <div class="pg-restruct-prompt"><span class="type-badge type-{{ typeKey(p.promptType) }}">{{ p.promptType }}</span>{{ p.name }}<span class="ct">{{ p.sectionCount }}</span></div>
+                  }
+                </div>
+              }
+            } @else {
+              <app-loader label="Analysing…" />
+            }
+          </div>
+          <div class="pg-modal-foot">
+            <button class="ghost" type="button" (click)="closeModal()">Cancel</button>
+            <span class="spacer"></span>
+            @if (restructure(); as r) {
+              @if (r.changes.length > 0) {
+                <button class="btn-primary" type="button" [disabled]="restructureBusy()" (click)="applyRestructure()">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  Apply restructure
+                </button>
+              }
+            }
+          </div>
+        }
+        @case ('publish') {
+          @if (publishedSetId() !== null) {
+            <div class="pg-publish-done">
+              <div class="pg-publish-check">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 5-5"/></svg>
+              </div>
+              <h2>Published</h2>
+              <p>“{{ publishName }}” is now available in Prompt Sets as a {{ publishVis() === 'draft' ? 'draft' : 'published set' }} with {{ promptCount() }} prompts and {{ sectionCount() }} sections.</p>
+              <div class="pg-modal-foot center">
+                <button class="ghost" type="button" (click)="goToPublishedSet()">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                  Open prompt set
+                </button>
+                <button class="btn-primary" type="button" (click)="closeModal()">Done</button>
+              </div>
+            </div>
+          } @else {
+            <div class="pg-modal-head">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>
+              <h2>Publish as a new prompt set</h2>
+              <button class="opt-ai-x" type="button" (click)="closeModal()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+            </div>
+            <div class="pg-modal-body">
+              <div class="form-field">
+                <label class="form-label">Prompt set name <span class="req">*</span></label>
+                <input name="publishName" [(ngModel)]="publishName" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Description</label>
+                <textarea class="opt-ai-goal" rows="2" [(ngModel)]="publishDesc" name="publishDesc" placeholder="What this set does and when to use it…"></textarea>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Visibility</label>
+                <div class="pg-vis">
+                  <button class="pg-vis-opt" type="button" [class.active]="publishVis() === 'draft'" (click)="publishVis.set('draft')">
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                    <span><b>Draft</b><i>Only you can see it</i></span>
+                  </button>
+                  <button class="pg-vis-opt" type="button" [class.active]="publishVis() === 'published'" (click)="publishVis.set('published')">
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>
+                    <span><b>Published</b><i>Shared with your team</i></span>
+                  </button>
+                </div>
+              </div>
+              <div class="pg-publish-summary">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
+                {{ promptCount() }} prompts · {{ sectionCount() }} sections will be saved.
+              </div>
+            </div>
+            <div class="pg-modal-foot">
+              <button class="ghost" type="button" (click)="closeModal()">Cancel</button>
+              <span class="spacer"></span>
+              <button class="btn-add" type="button" [disabled]="!publishName.trim() || publishBusy()" (click)="doPublish()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>
+                {{ publishBusy() ? 'Publishing…' : 'Publish set' }}
+              </button>
+            </div>
+          }
+        }
+      }
+    </div>
+  </div>
+}

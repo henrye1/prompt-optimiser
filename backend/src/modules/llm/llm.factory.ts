@@ -49,3 +49,13 @@ export async function resolveLlmServiceForSession(db: SupabaseClient, sessionId:
     .maybeSingle();
   return buildLlm((data as { ai_model: ModelRow | null } | null)?.ai_model ?? null);
 }
+
+/** Generation service for a prompt review session, based on its selected model. */
+export async function resolveLlmServiceForPromptReviewSession(db: SupabaseClient, sessionId: number): Promise<ResolvedLlm> {
+  const { data } = await db
+    .from('prompt_review_session')
+    .select('ai_model:ai_model(name, api_key, provider:ai_model_provider(name))')
+    .eq('id', sessionId)
+    .maybeSingle();
+  return buildLlm((data as { ai_model: ModelRow | null } | null)?.ai_model ?? null);
+}
