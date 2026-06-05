@@ -60,6 +60,13 @@ export class OptimizerService {
     );
   }
 
+  /** Runs the section's ORIGINAL prompt as a cached baseline for comparison. */
+  runBaseline(sectionId: number) {
+    return firstValueFrom(
+      this.http.post<OptimizerSectionRun>(`${this.base}/optimizer-sections/${sectionId}/run-baseline`, {}),
+    );
+  }
+
   /** Ask the session's model to rewrite a section's prompt for a stated goal. */
   improveSection(sectionId: number, goal: string) {
     return firstValueFrom(

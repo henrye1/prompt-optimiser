@@ -27,6 +27,7 @@ export interface OptimizerSectionRun {
   status: string;
   error_message: string | null;
   created_at: string;
+  is_baseline: boolean;
 }
 
 export interface OptimizerSection {

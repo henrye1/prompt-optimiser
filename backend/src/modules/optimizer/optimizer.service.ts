@@ -30,7 +30,7 @@ export async function getSession(db: SupabaseClient, id: number) {
         'sections:optimizer_section(id, prompt_section_id, prompt_name, prompt_type_id, prompt_sequence, title, sequence, ' +
         'original_content, current_content, ' +
         'prompt_type:prompt_type(description), ' +
-        'runs:optimizer_section_run(id, prompt_content, output, input_tokens, output_tokens, latency_ms, model_name, status, error_message, created_at)), ' +
+        'runs:optimizer_section_run(id, prompt_content, output, input_tokens, output_tokens, latency_ms, model_name, status, error_message, created_at, is_baseline)), ' +
         'files:optimizer_file(id, file_name, mime_type, run_file_type_id, is_example_file, created_at, deleted_at)',
     )
     .eq('id', id)

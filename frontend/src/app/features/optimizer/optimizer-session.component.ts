@@ -5,7 +5,7 @@ import { OptimizerService } from './optimizer.service';
 import { AuthService } from '../../core/auth.service';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
 import { LoaderComponent } from '../../shared/loader.component';
-import type { OptimizerFile, OptimizerSection, OptimizerSession } from './optimizer.models';
+import type { OptimizerFile, OptimizerSection, OptimizerSectionRun, OptimizerSession } from './optimizer.models';
 
 interface SectionGroup {
   seq: number;
@@ -94,6 +94,29 @@ export class OptimizerSessionComponent {
   readonly isOwner = computed(() => this.session()?.created_by === this.auth.user()?.id);
   readonly selected = computed(() => this.session()?.sections.find((s) => s.id === this.selectedId()) ?? null);
 
+  // ---- "Compare to original" (baseline) ----
+  /** Whether the Output card is showing the compare-to-original view. */
+  readonly compare = signal(false);
+  /** History runs of the edited (current) prompt — excludes baseline runs. */
+  readonly currentRuns = computed<OptimizerSectionRun[]>(() => (this.selected()?.runs ?? []).filter((r) => !r.is_baseline));
+  /** The latest current run (its output is the "Current" column). */
+  readonly latestRun = computed<OptimizerSectionRun | null>(() => this.currentRuns()[0] ?? null);
+  /** The cached baseline run (output of the original prompt). */
+  readonly baselineRun = computed<OptimizerSectionRun | null>(() => (this.selected()?.runs ?? []).find((r) => r.is_baseline) ?? null);
+  /** Word-level diff of the original prompt → the prompt that produced the current output. */
+  readonly comparePromptDiff = computed<DiffSegment[]>(() => {
+    const s = this.selected();
+    const cur = this.latestRun();
+    if (!s || !cur) return [];
+    return wordDiff(s.original_content, cur.prompt_content);
+  });
+  /** True when the current output's prompt still matches the original (results should match). */
+  readonly promptUnchanged = computed(() => {
+    const s = this.selected();
+    const cur = this.latestRun();
+    return !!s && !!cur && cur.prompt_content === s.original_content;
+  });
+
   readonly contextGroups = computed(() => this.groupsByType('System'));
   readonly assessmentGroups = computed(() => this.session() ? this.groupsExcluding('System') : []);
 
@@ -178,6 +201,7 @@ export class OptimizerSessionComponent {
     this.selectedId.set(section.id);
     this.draft.set(section.current_content);
     this.info.set(null);
+    this.compare.set(false);
     this.resetAi();
   }
   onDraftChange(v: string): void {
@@ -218,6 +242,34 @@ export class OptimizerSessionComponent {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /**
+   * Toggles the compare-to-original view. The first time it's switched on for a
+   * section, the ORIGINAL prompt is run once (and cached as a baseline run);
+   * reused on later toggles.
+   */
+  async toggleCompare(): Promise<void> {
+    const sec = this.selected();
+    if (!sec) return;
+    if (this.compare()) {
+      this.compare.set(false);
+      return;
+    }
+    if (!this.baselineRun() && !this.busy()) {
+      this.busy.set(true);
+      this.error.set(null);
+      try {
+        await this.api.runBaseline(sec.id);
+        this.session.set(await this.api.get(this.id));
+      } catch {
+        this.error.set('Failed to run the original prompt');
+        this.busy.set(false);
+        return;
+      }
+      this.busy.set(false);
+    }
+    this.compare.set(true);
   }
 
   // ---- AI helper ----

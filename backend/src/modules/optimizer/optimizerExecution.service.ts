@@ -8,6 +8,7 @@ import { HttpError } from '../../middleware/error.js';
 interface SectionRow {
   id: number;
   optimizer_session_id: number;
+  original_content: string;
   current_content: string;
   prompt_type: { description: string } | null;
 }
@@ -61,18 +62,26 @@ async function buildFileContext(db: SupabaseClient, sessionId: number): Promise<
 }
 
 /**
- * Runs a single optimizer section against the source documents using the tuned
- * prompt, and records the result as an optimizer_section_run (history entry).
- * Returns the created run row (status 'complete' or 'failed').
+ * Runs a single optimizer section against the source documents and records the
+ * result as an optimizer_section_run (history entry). Returns the created run
+ * row (status 'complete' or 'failed').
+ *
+ * By default the section's tuned (current) prompt is run. With `{ baseline: true }`
+ * the ORIGINAL prompt is run instead and the row is flagged `is_baseline` — used
+ * to compare the edited output against the original. System instruction and file
+ * context are built identically either way, so only this section's prompt varies.
  */
-export async function runSection(db: SupabaseClient, sectionId: number) {
+export async function runSection(db: SupabaseClient, sectionId: number, opts: { baseline?: boolean } = {}) {
   const { data: secData, error: secErr } = await db
     .from('optimizer_section')
-    .select('id, optimizer_session_id, current_content, prompt_type:prompt_type(description)')
+    .select('id, optimizer_session_id, original_content, current_content, prompt_type:prompt_type(description)')
     .eq('id', sectionId)
     .maybeSingle();
   throwOnError(secErr, 'Load optimizer section');
   const section = requireFound(secData, 'Optimizer section') as unknown as SectionRow;
+
+  const baseline = opts.baseline === true;
+  const promptContent = baseline ? section.original_content : section.current_content;
 
   const { service, label, modelName } = await resolveLlmServiceForSession(db, section.optimizer_session_id);
   const [systemInstruction, context] = await Promise.all([
@@ -85,35 +94,37 @@ export async function runSection(db: SupabaseClient, sectionId: number) {
   try {
     const { text, inputTokens, outputTokens } = await service.generate({
       systemInstruction,
-      prompt: section.current_content,
+      prompt: promptContent,
       context,
     });
     row = {
       optimizer_section_id: sectionId,
-      prompt_content: section.current_content,
+      prompt_content: promptContent,
       output: text,
       input_tokens: inputTokens,
       output_tokens: outputTokens,
       latency_ms: Date.now() - started,
       model_name: modelName ?? label,
       status: 'complete',
+      is_baseline: baseline,
     };
   } catch (e) {
     row = {
       optimizer_section_id: sectionId,
-      prompt_content: section.current_content,
+      prompt_content: promptContent,
       output: '',
       latency_ms: Date.now() - started,
       model_name: modelName ?? label,
       status: 'failed',
       error_message: e instanceof Error ? e.message : 'Generation failed',
+      is_baseline: baseline,
     };
   }
 
   const { data, error } = await db
     .from('optimizer_section_run')
     .insert(row)
-    .select('id, prompt_content, output, input_tokens, output_tokens, latency_ms, model_name, status, error_message, created_at')
+    .select('id, prompt_content, output, input_tokens, output_tokens, latency_ms, model_name, status, error_message, created_at, is_baseline')
     .single();
   throwOnError(error, 'Record section run');
   return data;

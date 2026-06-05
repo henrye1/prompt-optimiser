@@ -100,6 +100,13 @@ export function optimizerRouter(): Router {
   );
 
   router.post(
+    '/optimizer-sections/:id/run-baseline',
+    asyncHandler(async (req, res) => {
+      res.status(201).json(await runSection(req.supabase!, parseId(req.params.id), { baseline: true }));
+    }),
+  );
+
+  router.post(
     '/optimizer-sections/:id/improve',
     asyncHandler(async (req, res) => {
       const goal = requireString(req.body?.goal, 'goal');
