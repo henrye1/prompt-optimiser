@@ -245,37 +245,40 @@
           </div>
 
           @if (currentRuns().length) {
-            @let latest = currentRuns()[0];
-            <div class="opt-output-card">
-              <div class="ooc-head">
-                <span class="ooc-title">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
-                  Output
-                </span>
-                <div class="ooc-right">
-                  @if (!isSystem(sec)) {
-                    <button type="button" class="opt-cmp-toggle" [class.on]="compare()" [disabled]="busy()" (click)="toggleCompare()" title="Run the original prompt and compare its result">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg>
-                      {{ compare() ? 'Comparing to original' : (busy() ? 'Running…' : 'Compare to original') }}
-                    </button>
-                  }
-                  @if (!compare()) {
+            @if (shownRun(); as shown) {
+              <div class="opt-output-card">
+                <div class="ooc-head">
+                  <span class="ooc-title">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+                    {{ viewingHistory() ? 'Selected run' : 'Output' }}
+                  </span>
+                  <div class="ooc-right">
+                    @if (viewingHistory()) {
+                      <button type="button" class="opt-cmp-toggle" (click)="backToLatest()">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>
+                        Back to latest
+                      </button>
+                    }
+                    @if (previousRun()) {
+                      <button type="button" class="opt-cmp-toggle" [class.on]="compareView()" (click)="toggleCompareView()" title="Show or hide the comparison with the previous run">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg>
+                        {{ compareView() ? 'Comparing' : 'Compare' }}
+                      </button>
+                    }
                     <div class="ooc-chips">
-                      @if (latest.model_name) { <span class="chip"><span class="mb-tile sm provider-{{ providerKey(s.ai_model?.provider?.name) }}">{{ initial(latest.model_name) }}</span>{{ latest.model_name }}</span> }
-                      <span class="chip">{{ formatTokens(latest.input_tokens + latest.output_tokens) }} <span class="ch-lbl">tokens</span></span>
-                      <span class="chip">{{ latency(latest.latency_ms) }} <span class="ch-lbl">latency</span></span>
+                      @if (shown.model_name) { <span class="chip"><span class="mb-tile sm provider-{{ providerKey(s.ai_model?.provider?.name) }}">{{ initial(shown.model_name) }}</span>{{ shown.model_name }}</span> }
+                      <span class="chip">{{ formatTokens(shown.input_tokens + shown.output_tokens) }} <span class="ch-lbl">tokens</span></span>
+                      <span class="chip">{{ latency(shown.latency_ms) }} <span class="ch-lbl">latency</span></span>
                     </div>
-                  }
+                  </div>
                 </div>
-              </div>
 
-              @if (compare()) {
-                @if (baselineRun(); as base) {
+                @if (compareView() && previousRun(); as prev) {
                   <div class="opt-cmp">
                     <div class="opt-cmp-prompts">
                       <div class="opt-cmp-prompts-label">
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8h4M7 6v4"/><path d="M15 16h4"/></svg>
-                        Prompt changes
+                        Prompt changes vs previous
                         <span class="leg"><i class="ins"></i>added<i class="del"></i>removed</span>
                       </div>
                       <div class="opt-ai-diff">
@@ -290,36 +293,36 @@
                       @if (promptUnchanged()) {
                         <div class="opt-cmp-nochange">
                           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
-                          This prompt still matches the original — the results below should be identical.
+                          This prompt matches the previous version — the results below should be identical.
                         </div>
                       }
                     </div>
                     <div class="opt-cmp-cols">
                       <div class="opt-cmp-col">
-                        <div class="opt-cmp-col-head original"><span class="dot"></span>Original prompt</div>
-                        @if (base.status === 'failed') {
-                          <div class="opt-cmp-out"><p class="error">{{ base.error_message || 'Generation failed' }}</p></div>
+                        <div class="opt-cmp-col-head original"><span class="dot"></span>Previous<span class="when">{{ formatDateTime(prev.created_at) }}</span></div>
+                        @if (prev.status === 'failed') {
+                          <div class="opt-cmp-out"><p class="error">{{ prev.error_message || 'Generation failed' }}</p></div>
                         } @else {
-                          <div class="opt-cmp-out sec-body markdown" [innerHTML]="base.output | markdown"></div>
+                          <div class="opt-cmp-out sec-body markdown" [innerHTML]="prev.output | markdown"></div>
                         }
                       </div>
                       <div class="opt-cmp-col">
-                        <div class="opt-cmp-col-head current"><span class="dot"></span>Current</div>
-                        @if (latest.status === 'failed') {
-                          <div class="opt-cmp-out"><p class="error">{{ latest.error_message || 'Generation failed' }}</p></div>
+                        <div class="opt-cmp-col-head current"><span class="dot"></span>{{ viewingHistory() ? 'Selected' : 'Current' }}<span class="when">{{ formatDateTime(shown.created_at) }}</span></div>
+                        @if (shown.status === 'failed') {
+                          <div class="opt-cmp-out"><p class="error">{{ shown.error_message || 'Generation failed' }}</p></div>
                         } @else {
-                          <div class="opt-cmp-out sec-body markdown" [innerHTML]="latest.output | markdown"></div>
+                          <div class="opt-cmp-out sec-body markdown" [innerHTML]="shown.output | markdown"></div>
                         }
                       </div>
                     </div>
                   </div>
+                } @else if (shown.status === 'failed') {
+                  <p class="error">{{ shown.error_message || 'Generation failed' }}</p>
+                } @else {
+                  <div class="sec-body markdown" [innerHTML]="shown.output | markdown"></div>
                 }
-              } @else if (latest.status === 'failed') {
-                <p class="error">{{ latest.error_message || 'Generation failed' }}</p>
-              } @else {
-                <div class="sec-body markdown" [innerHTML]="latest.output | markdown"></div>
-              }
-            </div>
+              </div>
+            }
 
             <div class="opt-history-card">
               <div class="ohc-head">
@@ -330,7 +333,7 @@
                 <span class="muted ohc-count">{{ currentRuns().length }} runs</span>
               </div>
               @for (r of currentRuns(); track r.id) {
-                <div class="hist-row">
+                <div class="hist-row" [class.viewing]="shownRun()?.id === r.id" (click)="viewRun(r.id)">
                   <span class="hist-ic">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
                   </span>
@@ -347,7 +350,7 @@
                         <span class="chip sm">{{ latency(r.latency_ms) }}</span>
                       </div>
                       @if (isOwner() && !isSystem(sec)) {
-                        <button type="button" class="restore-btn" (click)="restore(r.prompt_content)">
+                        <button type="button" class="restore-btn" (click)="$event.stopPropagation(); restore(r.prompt_content)">
                           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
                           Restore this prompt
                         </button>

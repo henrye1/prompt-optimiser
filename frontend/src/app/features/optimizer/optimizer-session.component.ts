@@ -94,27 +94,47 @@ export class OptimizerSessionComponent {
   readonly isOwner = computed(() => this.session()?.created_by === this.auth.user()?.id);
   readonly selected = computed(() => this.session()?.sections.find((s) => s.id === this.selectedId()) ?? null);
 
-  // ---- "Compare to original" (baseline) ----
-  /** Whether the Output card is showing the compare-to-original view. */
-  readonly compare = signal(false);
-  /** History runs of the edited (current) prompt — excludes baseline runs. */
+  // ---- run viewing + compare-to-previous ----
+  /** Which run is loaded into the Output view; null = the latest run. */
+  readonly viewedRunId = signal<number | null>(null);
+  /** Whether to show the comparison against the previous run (purely a view toggle). */
+  readonly compareView = signal(true);
+  /** This section's runs, newest first. */
   readonly currentRuns = computed<OptimizerSectionRun[]>(() => (this.selected()?.runs ?? []).filter((r) => !r.is_baseline));
-  /** The latest current run (its output is the "Current" column). */
+  /** The latest run. */
   readonly latestRun = computed<OptimizerSectionRun | null>(() => this.currentRuns()[0] ?? null);
-  /** The cached baseline run (output of the original prompt). */
-  readonly baselineRun = computed<OptimizerSectionRun | null>(() => (this.selected()?.runs ?? []).find((r) => r.is_baseline) ?? null);
-  /** Word-level diff of the original prompt → the prompt that produced the current output. */
-  readonly comparePromptDiff = computed<DiffSegment[]>(() => {
-    const s = this.selected();
-    const cur = this.latestRun();
-    if (!s || !cur) return [];
-    return wordDiff(s.original_content, cur.prompt_content);
+  /** The run shown in the Output card — a clicked history run, or the latest. */
+  readonly shownRun = computed<OptimizerSectionRun | null>(() => {
+    const runs = this.currentRuns();
+    const id = this.viewedRunId();
+    return (id !== null ? runs.find((r) => r.id === id) : null) ?? runs[0] ?? null;
   });
-  /** True when the current output's prompt still matches the original (results should match). */
+  /** The run immediately before the shown one — the "previous version" to compare against. */
+  readonly previousRun = computed<OptimizerSectionRun | null>(() => {
+    const runs = this.currentRuns();
+    const shown = this.shownRun();
+    if (!shown) return null;
+    const i = runs.findIndex((r) => r.id === shown.id);
+    return i >= 0 ? runs[i + 1] ?? null : null;
+  });
+  /** True when the shown run isn't the latest (i.e. viewing history). */
+  readonly viewingHistory = computed(() => {
+    const shown = this.shownRun();
+    const latest = this.latestRun();
+    return !!shown && !!latest && shown.id !== latest.id;
+  });
+  /** Word-level diff of the previous prompt → the shown run's prompt. */
+  readonly comparePromptDiff = computed<DiffSegment[]>(() => {
+    const prev = this.previousRun();
+    const shown = this.shownRun();
+    if (!prev || !shown) return [];
+    return wordDiff(prev.prompt_content, shown.prompt_content);
+  });
+  /** True when the shown run's prompt matches the previous run's (results should be identical). */
   readonly promptUnchanged = computed(() => {
-    const s = this.selected();
-    const cur = this.latestRun();
-    return !!s && !!cur && cur.prompt_content === s.original_content;
+    const prev = this.previousRun();
+    const shown = this.shownRun();
+    return !!prev && !!shown && prev.prompt_content === shown.prompt_content;
   });
 
   readonly contextGroups = computed(() => this.groupsByType('System'));
@@ -201,7 +221,8 @@ export class OptimizerSessionComponent {
     this.selectedId.set(section.id);
     this.draft.set(section.current_content);
     this.info.set(null);
-    this.compare.set(false);
+    this.viewedRunId.set(null);
+    this.compareView.set(true);
     this.resetAi();
   }
   onDraftChange(v: string): void {
@@ -235,6 +256,7 @@ export class OptimizerSessionComponent {
       await this.api.runSection(sec.id);
       const fresh = await this.api.get(this.id);
       this.session.set(fresh);
+      this.viewedRunId.set(null); // jump to the new latest run
       const updated = fresh.sections.find((s) => s.id === sec.id);
       if (updated) this.draft.set(updated.current_content);
     } catch {
@@ -244,32 +266,15 @@ export class OptimizerSessionComponent {
     }
   }
 
-  /**
-   * Toggles the compare-to-original view. The first time it's switched on for a
-   * section, the ORIGINAL prompt is run once (and cached as a baseline run);
-   * reused on later toggles.
-   */
-  async toggleCompare(): Promise<void> {
-    const sec = this.selected();
-    if (!sec) return;
-    if (this.compare()) {
-      this.compare.set(false);
-      return;
-    }
-    if (!this.baselineRun() && !this.busy()) {
-      this.busy.set(true);
-      this.error.set(null);
-      try {
-        await this.api.runBaseline(sec.id);
-        this.session.set(await this.api.get(this.id));
-      } catch {
-        this.error.set('Failed to run the original prompt');
-        this.busy.set(false);
-        return;
-      }
-      this.busy.set(false);
-    }
-    this.compare.set(true);
+  /** Loads a past run into the Output view (compares it to the run before it). */
+  viewRun(runId: number): void {
+    this.viewedRunId.set(runId);
+  }
+  backToLatest(): void {
+    this.viewedRunId.set(null);
+  }
+  toggleCompareView(): void {
+    this.compareView.update((v) => !v);
   }
 
   // ---- AI helper ----

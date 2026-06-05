@@ -636,8 +636,10 @@ input[type='file'] { display: none; }
 .opt-output-card .sec-body { padding: 1rem 1.1rem; }
 
 .ohc-count { font-size: 0.78rem; }
-.hist-row { display: flex; gap: 0.7rem; padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--border); }
+.hist-row { display: flex; gap: 0.7rem; padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--border); border-left: 3px solid transparent; cursor: pointer; }
 .hist-row:last-child { border-bottom: none; }
+.hist-row:hover { background: #f6f7f9; }
+.hist-row.viewing { background: var(--violet-tint); border-left-color: var(--violet); }
 .hist-ic { width: 28px; height: 28px; border-radius: 8px; background: var(--violet-tint); color: var(--violet); display: flex; align-items: center; justify-content: center; flex: none; }
 .hist-main { flex: 1; min-width: 0; }
 .hist-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
@@ -671,6 +673,7 @@ input[type='file'] { display: none; }
 .opt-cmp-col-head .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .opt-cmp-col-head.original .dot { background: var(--faint); }
 .opt-cmp-col-head.current .dot { background: var(--green-deep); }
+.opt-cmp-col-head .when { margin-left: auto; font-weight: 500; color: var(--faint); font-size: 0.72rem; font-family: ui-monospace, monospace; }
 .opt-cmp-out { padding: 0.85rem; }
 
 /* ---- AI helper (improve a prompt) ---- */
