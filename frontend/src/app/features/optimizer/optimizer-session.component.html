@@ -236,7 +236,7 @@
                   @if (isOwner()) {
                     <button class="btn-primary" type="button" (click)="rerun()" [disabled]="busy()">
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                      {{ busy() ? 'Running…' : 'Rerun analysis' }}
+                      {{ busy() ? 'Running…' : 'Run analysis' }}
                     </button>
                   }
                 }
@@ -303,7 +303,7 @@
             </div>
           } @else if (!isSystem(sec)) {
             <div class="opt-empty">
-              <p class="muted">No runs yet. Edit the prompt above and click <strong>Rerun analysis</strong> to generate the first output.</p>
+              <p class="muted">No runs yet. Edit the prompt above and click <strong>Run analysis</strong> to generate the first output.</p>
             </div>
           }
         } @else {
