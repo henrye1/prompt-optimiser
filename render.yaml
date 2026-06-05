@@ -1,0 +1,58 @@
+# Render Blueprint — deploys both services from this repo.
+#   prompt-optimiser-api  : Node/Express API  (backend/)
+#   prompt-optimiser-web  : Angular static SPA (frontend/)
+#
+# Supabase is external (already hosted). After the FIRST deploy you must set the
+# two cross-referencing URLs and then redeploy — see DEPLOY.md:
+#   API service →  CORS_ORIGIN  = <web service URL>
+#   Web service →  API_BASE_URL = <api service URL>
+services:
+  # ---- Backend API (Node) ----
+  - type: web
+    name: prompt-optimiser-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Secrets / URLs — set these in the Render dashboard (sync: false = not in git).
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CORS_ORIGIN # = the web service URL, e.g. https://prompt-optimiser-web.onrender.com
+        sync: false
+      # PORT is provided by Render automatically; the app reads it.
+
+  # ---- Frontend (Angular static site) ----
+  - type: web
+    runtime: static
+    name: prompt-optimiser-web
+    rootDir: frontend
+    buildCommand: npm ci --include=dev && npm run build
+    # Relative to rootDir (frontend/). If Render can't find the publish dir,
+    # change this to: frontend/dist/frontend/browser
+    staticPublishPath: dist/frontend/browser
+    autoDeploy: true
+    # SPA fallback: serve index.html for client-side routes.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Build-time values consumed by scripts/set-env.js.
+      - key: API_BASE_URL # = the API service URL, e.g. https://prompt-optimiser-api.onrender.com
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
