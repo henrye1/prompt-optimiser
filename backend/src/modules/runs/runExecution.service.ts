@@ -47,10 +47,17 @@ async function buildFileContext(db: SupabaseClient, runId: number): Promise<stri
   for (const file of files) {
     let markdown = file.markdown_content;
     if (markdown === null) {
-      const buffer = await downloadFile(db, file.storage_path);
-      markdown = await convertToMarkdown(buffer, file.file_name);
-      await cacheMarkdown(db, file.id, markdown);
-      await log(db, runId, 'info', `Converted ${file.file_name} to markdown (${markdown.length} chars)`);
+      try {
+        const buffer = await downloadFile(db, file.storage_path);
+        markdown = await convertToMarkdown(buffer, file.file_name);
+        await cacheMarkdown(db, file.id, markdown);
+        await log(db, runId, 'info', `Converted ${file.file_name} to markdown (${markdown.length} chars)`);
+      } catch (e) {
+        // One unreadable file (e.g. an unsupported format) shouldn't fail the run.
+        const message = e instanceof Error ? e.message : 'conversion failed';
+        await log(db, runId, 'error', `Skipped ${file.file_name}: ${message}`);
+        continue;
+      }
     }
     parts.push(`# File: ${file.file_name}\n\n${markdown}`);
   }

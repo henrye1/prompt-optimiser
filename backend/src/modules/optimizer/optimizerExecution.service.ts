@@ -44,9 +44,16 @@ async function buildFileContext(db: SupabaseClient, sessionId: number): Promise<
   for (const file of files) {
     let markdown = file.markdown_content;
     if (markdown === null) {
-      const buffer = await downloadFile(db, file.storage_path);
-      markdown = await convertToMarkdown(buffer, file.file_name);
-      await db.from('optimizer_file').update({ markdown_content: markdown }).eq('id', file.id);
+      try {
+        const buffer = await downloadFile(db, file.storage_path);
+        markdown = await convertToMarkdown(buffer, file.file_name);
+        await db.from('optimizer_file').update({ markdown_content: markdown }).eq('id', file.id);
+      } catch (e) {
+        // One unreadable file (e.g. an unsupported format) shouldn't fail the run.
+        // eslint-disable-next-line no-console
+        console.error(`Skipping unreadable file ${file.file_name}:`, e instanceof Error ? e.message : e);
+        continue;
+      }
     }
     parts.push(`# File: ${file.file_name}\n\n${markdown}`);
   }
