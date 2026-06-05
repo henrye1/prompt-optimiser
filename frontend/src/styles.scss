@@ -649,6 +649,40 @@ input[type='file'] { display: none; }
 .restore-btn:hover { background: var(--violet-tint); border-radius: 6px; }
 .opt-empty { background: #fff; border: 1px dashed var(--border-strong); border-radius: var(--r); padding: 1.5rem; text-align: center; }
 
+/* ---- AI helper (improve a prompt) ---- */
+.opt-ai-open { margin-top: 0.85rem; display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--violet); background: var(--lavender); border: 1px dashed var(--violet-tint); border-radius: var(--r-sm); padding: 0.5rem 0.8rem; cursor: pointer; }
+.opt-ai-open:hover { background: var(--violet-tint); border-color: var(--violet); }
+.opt-ai-open svg { flex: none; }
+.opt-ai { margin-top: 0.85rem; border: 1px solid var(--violet-tint); background: linear-gradient(var(--lavender), #fff); border-radius: var(--r-sm); padding: 0.9rem; }
+.opt-ai-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+.opt-ai-head svg { color: var(--violet); flex: none; }
+.opt-ai-head .t { font-weight: 700; font-size: 0.9rem; }
+.opt-ai-x { margin-left: auto; width: 26px; height: 26px; display: grid; place-items: center; padding: 0; border: none; background: none; color: var(--faint); border-radius: 7px; }
+.opt-ai-x:hover { background: #f1f2f5; color: var(--text); }
+.opt-ai-label { display: block; font-size: 0.76rem; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; }
+.opt-ai-goal { width: 100%; border: 1px solid var(--border-strong); border-radius: var(--r-sm); background: #fff; padding: 0.65rem 0.7rem; font-family: inherit; font-size: 0.86rem; line-height: 1.55; color: var(--text); outline: none; resize: vertical; min-height: 64px; }
+.opt-ai-goal:focus { border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-tint); }
+.opt-ai-goal::placeholder { color: var(--faint); }
+.opt-ai-actions { display: flex; justify-content: flex-end; margin-top: 0.6rem; }
+.opt-ai-err { display: flex; align-items: center; gap: 0.45rem; margin-top: 0.6rem; font-size: 0.8rem; color: var(--error-fg); background: var(--error-bg); border-radius: var(--r-sm); padding: 0.55rem 0.7rem; }
+.opt-ai-err svg { flex: none; }
+.opt-ai-result { margin-top: 0.75rem; }
+.opt-ai-result-label { display: flex; align-items: center; gap: 0.45rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.5rem; }
+.opt-ai-result-label svg { color: var(--violet); flex: none; }
+.opt-ai-result-label .leg { margin-left: auto; display: inline-flex; align-items: center; gap: 0.3rem; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 0.68rem; color: var(--faint); }
+.opt-ai-result-label .leg i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; margin-left: 0.5rem; }
+.opt-ai-result-label .leg i.ins { background: #cdedd7; }
+.opt-ai-result-label .leg i.del { background: #f4d2d2; }
+.opt-ai-diff { border: 1px solid var(--border-strong); border-radius: var(--r-sm); background: #fff; padding: 0.8rem; font-family: ui-monospace, monospace; font-size: 0.78rem; line-height: 1.7; color: var(--text); white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow-y: auto; }
+.opt-ai-diff ins { background: #d6f0de; color: #136c39; text-decoration: none; border-radius: 3px; box-shadow: 0 0 0 1px #bfe6cc inset; }
+.opt-ai-diff del { background: #fbe0e0; color: #ad3535; text-decoration: line-through; border-radius: 3px; box-shadow: 0 0 0 1px #f3cccc inset; }
+.opt-ai-apply { display: flex; align-items: center; gap: 0.55rem; margin-top: 0.75rem; }
+.opt-ai-apply .spacer { flex: 1; }
+.opt-ai-soft { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--violet-tint); color: var(--violet); border: 1px solid transparent; font-weight: 600; }
+.opt-ai-soft:hover { background: var(--lavender); }
+.spin { animation: opt-spin 1s linear infinite; }
+@keyframes opt-spin { to { transform: rotate(360deg); } }
+
 @media (max-width: 960px) {
   .editor-grid { grid-template-columns: 1fr; }
   .run-grid { grid-template-columns: 1fr; }

@@ -3,6 +3,7 @@ import { convertToMarkdown } from '../../lib/markdown.js';
 import { downloadFile } from '../runs/files.service.js';
 import { resolveLlmServiceForSession } from '../llm/llm.factory.js';
 import { throwOnError, requireFound } from '../../lib/supabaseError.js';
+import { HttpError } from '../../middleware/error.js';
 
 interface SectionRow {
   id: number;
@@ -109,4 +110,44 @@ export async function runSection(db: SupabaseClient, sectionId: number) {
     .single();
   throwOnError(error, 'Record section run');
   return data;
+}
+
+/**
+ * Asks the session's attached model to rewrite a section's prompt so it better
+ * achieves the user's stated goal, preserving the original intent. Returns the
+ * suggested rewrite as plain text — no run is recorded and nothing is persisted;
+ * the caller decides whether to apply it.
+ */
+export async function improveSection(
+  db: SupabaseClient,
+  sectionId: number,
+  goal: string,
+): Promise<{ suggestion: string }> {
+  const { data: secData, error: secErr } = await db
+    .from('optimizer_section')
+    .select('id, optimizer_session_id, current_content')
+    .eq('id', sectionId)
+    .maybeSingle();
+  throwOnError(secErr, 'Load optimizer section');
+  const section = requireFound(secData, 'Optimizer section') as {
+    id: number;
+    optimizer_session_id: number;
+    current_content: string;
+  };
+
+  const { service } = await resolveLlmServiceForSession(db, section.optimizer_session_id);
+  const instruction =
+    'You are refining a single instruction (a "prompt") that is fed to an AI model inside an automated document-analysis tool. ' +
+    "Rewrite the prompt so it better achieves the user's goal, while preserving its original intent and any concrete requirements. " +
+    'Keep it concise and in the same instructional voice. ' +
+    'Return ONLY the rewritten prompt text — no preamble, no quotation marks, no explanation, no markdown.\n\n' +
+    `User's goal: ${goal}\n\n` +
+    `Current prompt:\n${section.current_content}`;
+
+  const { text } = await service.generate({ prompt: instruction });
+  const suggestion = text.trim().replace(/^["'\s]+|["'\s]+$/g, '');
+  if (!suggestion) {
+    throw new HttpError(502, 'The model returned an empty suggestion. Try rephrasing your goal.');
+  }
+  return { suggestion };
 }

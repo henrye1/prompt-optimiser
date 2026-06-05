@@ -4,7 +4,7 @@ import { requireAuth } from '../../middleware/auth.js';
 import { asyncHandler, HttpError } from '../../middleware/error.js';
 import { optionalBoolean, optionalInt, parseId, requireInt, requireString } from '../../lib/validate.js';
 import * as optimizer from './optimizer.service.js';
-import { runSection } from './optimizerExecution.service.js';
+import { improveSection, runSection } from './optimizerExecution.service.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 
@@ -96,6 +96,14 @@ export function optimizerRouter(): Router {
     '/optimizer-sections/:id/run',
     asyncHandler(async (req, res) => {
       res.status(201).json(await runSection(req.supabase!, parseId(req.params.id)));
+    }),
+  );
+
+  router.post(
+    '/optimizer-sections/:id/improve',
+    asyncHandler(async (req, res) => {
+      const goal = requireString(req.body?.goal, 'goal');
+      res.json(await improveSection(req.supabase!, parseId(req.params.id), goal));
     }),
   );
 

@@ -142,6 +142,87 @@
             <div class="opc-body">
               <div class="form-label">Prompt</div>
               <textarea class="code prompt-edit" rows="4" [ngModel]="draft()" (ngModelChange)="onDraftChange($event)" [disabled]="!isOwner()"></textarea>
+
+              @if (isOwner()) {
+                @if (!aiOpen()) {
+                  <button class="opt-ai-open" type="button" (click)="openAi()">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+                    Improve this prompt with AI
+                  </button>
+                } @else {
+                  <div class="opt-ai">
+                    <div class="opt-ai-head">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+                      <span class="t">Improve with AI</span>
+                      <button class="opt-ai-x" type="button" title="Close" (click)="resetAi()">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                      </button>
+                    </div>
+                    <label class="opt-ai-label">What’s your goal for this prompt?</label>
+                    <textarea class="opt-ai-goal" rows="2" [disabled]="aiBusy()"
+                      placeholder="e.g. Make the output more concise and always cite specific figures from the rating report"
+                      [ngModel]="aiGoal()" (ngModelChange)="aiGoal.set($event)"></textarea>
+
+                    @if (aiSuggestion() === null) {
+                      <div class="opt-ai-actions">
+                        <button class="btn-primary" type="button" [disabled]="aiBusy() || !aiGoal().trim()" (click)="generateSuggestion()">
+                          @if (aiBusy()) {
+                            <svg class="spin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M3 12h4M17 12h4M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>
+                            Thinking…
+                          } @else {
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.8L19 9.5l-4.2 2.9L16 18l-4-3.2L8 18l1.2-5.6L5 9.5l5.1-1.7z"/></svg>
+                            Generate suggestion
+                          }
+                        </button>
+                      </div>
+                    }
+
+                    @if (aiError()) {
+                      <div class="opt-ai-err">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+                        {{ aiError() }}
+                      </div>
+                    }
+
+                    @if (aiSuggestion() !== null) {
+                      <div class="opt-ai-result">
+                        <div class="opt-ai-result-label">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8h4M7 6v4"/><path d="M15 16h4"/></svg>
+                          Suggested rewrite
+                          <span class="leg"><i class="ins"></i>added<i class="del"></i>removed</span>
+                        </div>
+                        <div class="opt-ai-diff">
+                          @for (d of aiDiff(); track $index) {
+                            @switch (d.t) {
+                              @case ('ins') { <ins>{{ d.v }}</ins> }
+                              @case ('del') { <del>{{ d.v }}</del> }
+                              @default { <span>{{ d.v }}</span> }
+                            }
+                          }
+                        </div>
+                        <div class="opt-ai-apply">
+                          <button class="ghost" type="button" (click)="tryAgain()">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+                            Try again
+                          </button>
+                          <span class="spacer"></span>
+                          <button class="opt-ai-soft" type="button" (click)="applySuggestion(false)">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                            Apply
+                          </button>
+                          @if (!isSystem(sec)) {
+                            <button class="btn-primary" type="button" (click)="applySuggestion(true)" [disabled]="busy()">
+                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                              Apply &amp; run
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              }
+
               <div class="opc-foot">
                 @if (isSystem(sec)) {
                   <span class="muted opc-note">Used as context for every assessment — edits are saved to the session, not run on their own.</span>

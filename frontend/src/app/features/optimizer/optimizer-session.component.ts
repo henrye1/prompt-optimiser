@@ -19,6 +19,41 @@ interface FileGroup {
   files: OptimizerFile[];
 }
 
+interface DiffSegment {
+  t: 'eq' | 'ins' | 'del';
+  v: string;
+}
+
+/** Word-level diff (LCS) so users can see what the AI changed. */
+function wordDiff(a: string, b: string): DiffSegment[] {
+  const aw = (a || '').split(/(\s+)/);
+  const bw = (b || '').split(/(\s+)/);
+  const n = aw.length;
+  const m = bw.length;
+  const dp = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = aw[i] === bw[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const out: DiffSegment[] = [];
+  const push = (t: DiffSegment['t'], v: string): void => {
+    const last = out[out.length - 1];
+    if (last && last.t === t) last.v += v;
+    else out.push({ t, v });
+  };
+  let i = 0;
+  let j = 0;
+  while (i < n && j < m) {
+    if (aw[i] === bw[j]) { push('eq', aw[i]); i++; j++; }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) { push('del', aw[i]); i++; }
+    else { push('ins', bw[j]); j++; }
+  }
+  while (i < n) push('del', aw[i++]);
+  while (j < m) push('ins', bw[j++]);
+  return out;
+}
+
 /** Optimizer session workspace: tune a section's prompt, rerun, and save as a new set version. */
 @Component({
   selector: 'app-optimizer-session',
@@ -44,6 +79,17 @@ export class OptimizerSessionComponent {
   private readonly dirty = signal(false);
   /** prompt_sequence values whose nav group is collapsed. */
   readonly collapsed = signal<ReadonlySet<number>>(new Set());
+
+  // AI helper (per-section; reset when the selection changes)
+  readonly aiOpen = signal(false);
+  readonly aiGoal = signal('');
+  readonly aiBusy = signal(false);
+  readonly aiSuggestion = signal<string | null>(null);
+  readonly aiError = signal<string | null>(null);
+  /** Word-level diff between the current prompt and the AI suggestion. */
+  readonly aiDiff = computed<DiffSegment[]>(() =>
+    this.aiSuggestion() === null ? [] : wordDiff(this.draft(), this.aiSuggestion() ?? ''),
+  );
 
   readonly isOwner = computed(() => this.session()?.created_by === this.auth.user()?.id);
   readonly selected = computed(() => this.session()?.sections.find((s) => s.id === this.selectedId()) ?? null);
@@ -132,6 +178,7 @@ export class OptimizerSessionComponent {
     this.selectedId.set(section.id);
     this.draft.set(section.current_content);
     this.info.set(null);
+    this.resetAi();
   }
   onDraftChange(v: string): void {
     this.draft.set(v);
@@ -170,6 +217,53 @@ export class OptimizerSessionComponent {
       this.error.set('Failed to run section');
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  // ---- AI helper ----
+  openAi(): void {
+    this.aiOpen.set(true);
+  }
+  resetAi(): void {
+    this.aiOpen.set(false);
+    this.aiGoal.set('');
+    this.aiBusy.set(false);
+    this.aiSuggestion.set(null);
+    this.aiError.set(null);
+  }
+  tryAgain(): void {
+    this.aiSuggestion.set(null);
+    this.aiError.set(null);
+  }
+  async generateSuggestion(): Promise<void> {
+    const sec = this.selected();
+    const goal = this.aiGoal().trim();
+    if (!sec || !goal || this.aiBusy()) return;
+    this.aiBusy.set(true);
+    this.aiError.set(null);
+    this.aiSuggestion.set(null);
+    try {
+      // Persist any pending edits so the model improves the prompt as shown.
+      await this.persistDraft();
+      const { suggestion } = await this.api.improveSection(sec.id, goal);
+      this.aiSuggestion.set(suggestion);
+    } catch {
+      this.aiError.set("Couldn't reach the model just now. Please try again.");
+    } finally {
+      this.aiBusy.set(false);
+    }
+  }
+  async applySuggestion(alsoRun: boolean): Promise<void> {
+    const suggestion = this.aiSuggestion();
+    const sec = this.selected();
+    if (suggestion === null || !sec) return;
+    this.draft.set(suggestion);
+    this.dirty.set(suggestion !== sec.current_content);
+    this.resetAi();
+    if (alsoRun && !this.isSystem(sec)) {
+      await this.rerun();
+    } else {
+      this.info.set('AI suggestion applied — rerun to regenerate.');
     }
   }
 

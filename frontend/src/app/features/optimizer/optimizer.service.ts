@@ -60,6 +60,13 @@ export class OptimizerService {
     );
   }
 
+  /** Ask the session's model to rewrite a section's prompt for a stated goal. */
+  improveSection(sectionId: number, goal: string) {
+    return firstValueFrom(
+      this.http.post<{ suggestion: string }>(`${this.base}/optimizer-sections/${sectionId}/improve`, { goal }),
+    );
+  }
+
   saveToSet(sessionId: number) {
     return firstValueFrom(
       this.http.post<{ prompt_set_id: number; version: number }>(
