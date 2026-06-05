@@ -5,12 +5,18 @@ import { OptimizerService } from './optimizer.service';
 import { AuthService } from '../../core/auth.service';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
 import { LoaderComponent } from '../../shared/loader.component';
-import type { OptimizerSection, OptimizerSession } from './optimizer.models';
+import type { OptimizerFile, OptimizerSection, OptimizerSession } from './optimizer.models';
 
 interface SectionGroup {
+  seq: number;
   promptName: string;
   typeDesc: string;
   sections: OptimizerSection[];
+}
+
+interface FileGroup {
+  label: string;
+  files: OptimizerFile[];
 }
 
 /** Optimizer session workspace: tune a section's prompt, rerun, and save as a new set version. */
@@ -36,12 +42,31 @@ export class OptimizerSessionComponent {
   readonly selectedId = signal<number | null>(null);
   readonly draft = signal('');
   private readonly dirty = signal(false);
+  /** prompt_sequence values whose nav group is collapsed. */
+  readonly collapsed = signal<ReadonlySet<number>>(new Set());
 
   readonly isOwner = computed(() => this.session()?.created_by === this.auth.user()?.id);
   readonly selected = computed(() => this.session()?.sections.find((s) => s.id === this.selectedId()) ?? null);
 
   readonly contextGroups = computed(() => this.groupsByType('System'));
   readonly assessmentGroups = computed(() => this.session() ? this.groupsExcluding('System') : []);
+
+  /** Uploaded documents grouped by file type for the sidebar. */
+  readonly fileGroups = computed<FileGroup[]>(() => {
+    const files = this.session()?.files ?? [];
+    const defs = [
+      { type: 1, label: 'Financial statements' },
+      { type: 2, label: 'Rating report' },
+      { type: 3, label: 'Credit paper examples' },
+    ];
+    const groups = defs
+      .map((d) => ({ label: d.label, files: files.filter((f) => f.run_file_type_id === d.type) }))
+      .filter((g) => g.files.length);
+    const known = new Set([1, 2, 3]);
+    const other = files.filter((f) => !known.has(f.run_file_type_id));
+    if (other.length) groups.push({ label: 'Other documents', files: other });
+    return groups;
+  });
 
   constructor() {
     void this.load();
@@ -58,11 +83,30 @@ export class OptimizerSessionComponent {
     const map = new Map<number, SectionGroup>();
     for (const s of secs) {
       if (!map.has(s.prompt_sequence)) {
-        map.set(s.prompt_sequence, { promptName: s.prompt_name, typeDesc: s.prompt_type?.description ?? '', sections: [] });
+        map.set(s.prompt_sequence, { seq: s.prompt_sequence, promptName: s.prompt_name, typeDesc: s.prompt_type?.description ?? '', sections: [] });
       }
       map.get(s.prompt_sequence)!.sections.push(s);
     }
     return [...map.values()];
+  }
+
+  // ---- collapsible nav groups ----
+  isCollapsed(seq: number): boolean {
+    return this.collapsed().has(seq);
+  }
+  toggleGroup(seq: number): void {
+    const next = new Set(this.collapsed());
+    next.has(seq) ? next.delete(seq) : next.add(seq);
+    this.collapsed.set(next);
+  }
+  private expandGroup(seq: number): void {
+    if (!this.collapsed().has(seq)) return;
+    const next = new Set(this.collapsed());
+    next.delete(seq);
+    this.collapsed.set(next);
+  }
+  groupRuns(g: SectionGroup): number {
+    return g.sections.reduce((n, s) => n + s.runs.length, 0);
   }
 
   private async load(): Promise<void> {
@@ -82,6 +126,7 @@ export class OptimizerSessionComponent {
 
   // ---- selection / editing ----
   async select(section: OptimizerSection): Promise<void> {
+    this.expandGroup(section.prompt_sequence);
     if (section.id === this.selectedId()) return;
     await this.persistDraft();
     this.selectedId.set(section.id);
@@ -183,5 +228,24 @@ export class OptimizerSessionComponent {
   }
   ratingCount(): number {
     return this.session()?.files.filter((f) => f.run_file_type_id === 2).length ?? 0;
+  }
+
+  // ---- file display helpers ----
+  private isSpreadsheet(f: OptimizerFile): boolean {
+    return /\.(xlsx?|csv)$/i.test(f.file_name) || (f.mime_type ?? '').includes('sheet') || (f.mime_type ?? '').includes('csv');
+  }
+  /** Which glyph to draw for a file row: trophy (rating), columns (spreadsheet), or doc. */
+  fileGlyph(f: OptimizerFile): 'trophy' | 'columns' | 'doc' {
+    if (f.run_file_type_id === 2) return 'trophy';
+    return this.isSpreadsheet(f) ? 'columns' : 'doc';
+  }
+  /** Colour class for the file glyph. */
+  fileKind(f: OptimizerFile): 'rating' | 'xls' | 'pdf' {
+    if (f.run_file_type_id === 2) return 'rating';
+    return this.isSpreadsheet(f) ? 'xls' : 'pdf';
+  }
+  fileExt(f: OptimizerFile): string {
+    const ext = f.file_name.includes('.') ? f.file_name.split('.').pop() : '';
+    return (ext || 'file').toUpperCase();
   }
 }
