@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { requireAuth } from '../../middleware/auth.js';
 import { asyncHandler, HttpError } from '../../middleware/error.js';
-import { createUserClient } from '../../supabase/client.js';
+import { createServiceClient, createUserClient } from '../../supabase/client.js';
 import { optionalBoolean, optionalInt, optionalString, parseId, requireInt, requireString } from '../../lib/validate.js';
 import * as runs from './runs.service.js';
 import * as files from './files.service.js';
@@ -84,6 +84,21 @@ export function runsRouter(): Router {
         isExampleFile: req.body?.is_example_file === 'true',
       });
       res.status(201).json(result);
+    }),
+  );
+
+  router.get(
+    '/files/:id/download',
+    asyncHandler(async (req, res) => {
+      // Authorize against the caller's token: RLS only returns the row if they own
+      // the run or it's published (run_file_select). Storage objects live under the
+      // owner's folder, so once authorized we fetch the bytes with the service-role
+      // client to serve published-run viewers as well as owners.
+      const file = await files.getDownloadableFile(req.supabase!, parseId(req.params.id));
+      const buffer = await files.downloadFile(createServiceClient(), file.storage_path);
+      res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${file.file_name.replace(/"/g, '')}"`);
+      res.send(buffer);
     }),
   );
 

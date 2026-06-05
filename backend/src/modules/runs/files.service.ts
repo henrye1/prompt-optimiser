@@ -88,6 +88,18 @@ export async function getActiveFiles(db: SupabaseClient, runId: number) {
   }[];
 }
 
+/** File metadata needed to serve a download (RLS-checked via the caller's client). */
+export async function getDownloadableFile(db: SupabaseClient, fileId: number) {
+  const { data, error } = await db
+    .from('run_file')
+    .select('file_name, mime_type, storage_path')
+    .eq('id', fileId)
+    .is('deleted_at', null)
+    .maybeSingle();
+  throwOnError(error, 'Load run file');
+  return requireFound(data, 'File') as { file_name: string; mime_type: string; storage_path: string };
+}
+
 export async function downloadFile(db: SupabaseClient, storagePath: string): Promise<Buffer> {
   const { data, error } = await db.storage.from(BUCKET).download(storagePath);
   if (error || !data) throw new HttpError(500, `Download failed: ${error?.message ?? 'no data'}`);

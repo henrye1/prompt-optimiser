@@ -553,7 +553,8 @@ input[type='file'] { display: none; }
 .doc-row { display: flex; align-items: center; gap: 0.55rem; padding: 0.55rem 0.7rem; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 0.82rem; }
 .doc-row .doc-ic { color: var(--faint); flex: none; }
 .doc-row .doc-ic.rate { color: var(--violet); }
-.doc-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+.doc-row .doc-dl { flex: none; margin: -0.2rem -0.25rem -0.2rem 0; }
 
 /* ---- Optimizer list ---- */
 .opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.25rem; }

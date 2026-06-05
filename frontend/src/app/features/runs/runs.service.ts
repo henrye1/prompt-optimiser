@@ -48,6 +48,13 @@ export class RunsService {
     return firstValueFrom(this.http.delete<void>(`${this.base}/files/${fileId}`));
   }
 
+  /** Fetches a source document as a blob (auth header added by the interceptor). */
+  downloadFile(fileId: number) {
+    return firstValueFrom(
+      this.http.get(`${this.base}/files/${fileId}/download`, { responseType: 'blob' }),
+    );
+  }
+
   execute(runId: number) {
     return firstValueFrom(
       this.http.post<{ status: string }>(`${this.base}/runs/${runId}/execute`, {}),

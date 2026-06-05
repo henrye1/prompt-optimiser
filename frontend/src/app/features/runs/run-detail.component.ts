@@ -5,7 +5,7 @@ import { RunsService } from './runs.service';
 import { AuthService } from '../../core/auth.service';
 import { MarkdownPipe } from '../../shared/markdown.pipe';
 import { LoaderComponent } from '../../shared/loader.component';
-import { RUN_STATUS, type RunDetail, type RunSection } from './run.models';
+import { RUN_STATUS, type RunDetail, type RunFile, type RunSection } from './run.models';
 
 export type ExportFormat = 'md' | 'pdf' | 'word';
 
@@ -225,6 +225,14 @@ export class RunDetailComponent implements OnDestroy {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+  }
+  async download(f: RunFile): Promise<void> {
+    try {
+      const blob = await this.api.downloadFile(f.id);
+      this.downloadBlob(blob, f.file_name);
+    } catch {
+      this.error.set(`Failed to download ${f.file_name}`);
+    }
   }
   copy(text: string): void {
     void navigator.clipboard?.writeText(text);
